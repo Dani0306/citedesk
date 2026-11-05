@@ -150,3 +150,11 @@ Built 5 Nov 2026 on `feat/landing-motion` (7 commits). $0 in model spend; 5 Fire
 - **Found and fixed:** a source card grew 4 px when it gained the "Cited" badge, which became a layout shift once scrolling could trigger it. Reserved the height; layout shift over a full scroll went from 0.013 to about 0.002 in the dev server (Lighthouse not run). The OG headline wrapped and crowded the text below; its size was reduced.
 - **Known limits:** `metadataBase` is unset, so build output warns and `og:image` points at `http://localhost:3000`; that is fixed with the domain at deploy (T43). The hero load sequence plays once on load, so on a desktop first screen it is seen, and on phones the preview follows the scroll instead.
 - **Not verified by the agent:** Safari and Firefox (support per MDN, not tested), real touch, a keyboard-only pass, Lighthouse, and the Performance-panel check with 4× CPU throttling (manual steps 6, 9 and 10). A visual review of how it feels in motion also needs your eyes; screenshots are still frames.
+
+### Addendum: generated hero image (5 Nov 2026, owner request)
+
+- **Reverses the "coded SVG only" image decision for one asset**, at the owner's request: a decorative hero image generated with Higgsfield. Models compared by Higgsfield's own cost estimate (16:9, 2K); GPT Image 2.6 was chosen because it renders a transparent background, so one file serves light and dark mode.
+- **Spend:** 3 drafts at medium quality (1 credit each) and 1 final at high quality (2.75 credits) = **5.75 credits, about $0.40** at the Starter rate (52.26 → 46.51).
+- **Asset:** `app/_landing/hero-pages.webp`, the final trimmed to its content and re-encoded to 1200×857, 104 KB. It shows abstract pages with one highlighted passage linked to markers 1–3: no readable text, no people, no UI presented as real.
+- **Placement:** right of the headline at `lg` and up, `alt=""` (decorative), lazy, fades in with the hero sequence. Hidden below `lg`, and checked in headless Chrome that a 390 px viewport does not download it. The coded answer preview stays the real demonstration.
+

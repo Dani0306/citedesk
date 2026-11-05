@@ -1,3 +1,5 @@
+import Image from "next/image";
+import heroPages from "./hero-pages.webp";
 import { SAMPLES } from "./sample-data";
 import { Badge, ButtonLink, Container, DemoButton, Marker, stagger } from "./ui";
 
@@ -47,20 +49,28 @@ export function Hero() {
   return (
     <section aria-labelledby="hero-title" className="pt-16 pb-20 sm:pt-24 sm:pb-28">
       <Container>
-        <div className="max-w-3xl">
-          <Badge>In the lab · not deployed yet</Badge>
-          <h1 id="hero-title" className="text-display mt-6 text-balance">
-            Answers you can check.
-          </h1>
-          <p className="text-lead mt-6 max-w-2xl text-pretty text-ink-2">
-            CiteDesk answers questions only from your documentation, cites the exact passage behind every sentence,
-            and says “I don’t know” when the docs don’t cover it.
-          </p>
-          <div className="mt-9 flex flex-wrap items-start gap-3">
-            <DemoButton id="hero-demo" />
-            <ButtonLink href="#evidence" variant="secondary">
-              See the evidence
-            </ButtonLink>
+        <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+          <div className="max-w-3xl">
+            <Badge>In the lab · not deployed yet</Badge>
+            <h1 id="hero-title" className="text-display mt-6 text-balance">
+              Answers you can check.
+            </h1>
+            <p className="text-lead mt-6 max-w-2xl text-pretty text-ink-2">
+              CiteDesk answers questions only from your documentation, cites the exact passage behind every sentence,
+              and says “I don’t know” when the docs don’t cover it.
+            </p>
+            <div className="mt-9 flex flex-wrap items-start gap-3">
+              <DemoButton id="hero-demo" />
+              <ButtonLink href="#evidence" variant="secondary">
+                See the evidence
+              </ButtonLink>
+            </div>
+          </div>
+          {/* Decorative art (generated with GPT Image 2.6, transparent, so one file serves light and dark).
+              Large screens only: hidden below lg, and lazy, so phones never download it. The coded
+              answer preview below stays the real demonstration. */}
+          <div style={stagger(1)} className="hero-seq hidden lg:block">
+            <Image src={heroPages} alt="" sizes="(min-width: 1024px) 500px, 1px" className="h-auto w-full" />
           </div>
         </div>
         <AnswerPreview />
