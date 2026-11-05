@@ -1,5 +1,5 @@
 import { loadEvidence } from "./evidence-data";
-import { Section } from "./ui";
+import { Section, stagger } from "./ui";
 
 const CONFIGS = [
   { name: "Naive vector", planned: "week 2" },
@@ -38,49 +38,52 @@ export function Evidence() {
     >
       {evidence.status === "pending" ? (
         <>
-          <div
-            role="region"
-            aria-label="Retrieval ablation table"
-            tabIndex={0}
-            className="overflow-x-auto rounded-2xl border border-line bg-card"
-          >
-            <table className="w-full min-w-150 text-left text-sm">
-              <caption className="sr-only">
-                Retrieval ablation on 40 labelled questions. All results pending: no eval runs exist yet.
-              </caption>
-              <thead>
-                <tr className="border-b border-line text-ink-2">
-                  <th scope="col" className="px-5 py-4 font-medium">
-                    Configuration
-                  </th>
-                  {COLUMNS.map((c) => (
-                    <th key={c} scope="col" className="px-5 py-4 text-right font-medium">
-                      {c}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {CONFIGS.map((row) => (
-                  <tr key={row.name} className="border-b border-line last:border-0">
-                    <th scope="row" className="px-5 py-4 font-medium">
-                      {row.name}
-                      <span className="mt-0.5 block text-xs font-normal text-ink-2">Planned: {row.planned}</span>
+          {/* Outside the horizontal scroller on purpose: .table-scope gives the rows a timeline they can follow. */}
+          <div className="table-scope">
+            <div
+              role="region"
+              aria-label="Retrieval ablation table"
+              tabIndex={0}
+              className="overflow-x-auto rounded-2xl border border-line bg-card"
+            >
+              <table className="w-full min-w-150 text-left text-sm">
+                <caption className="sr-only">
+                  Retrieval ablation on 40 labelled questions. All results pending: no eval runs exist yet.
+                </caption>
+                <thead>
+                  <tr className="border-b border-line text-ink-2">
+                    <th scope="col" className="px-5 py-4 font-medium">
+                      Configuration
                     </th>
                     {COLUMNS.map((c) => (
-                      <td key={c} className="px-5 py-4 text-right font-mono tabular-nums">
-                        <Pending />
-                      </td>
+                      <th key={c} scope="col" className="px-5 py-4 text-right font-medium">
+                        {c}
+                      </th>
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {CONFIGS.map((row, i) => (
+                    <tr key={row.name} style={stagger(i)} className="reveal-row border-b border-line last:border-0">
+                      <th scope="row" className="px-5 py-4 font-medium">
+                        {row.name}
+                        <span className="mt-0.5 block text-xs font-normal text-ink-2">Planned: {row.planned}</span>
+                      </th>
+                      {COLUMNS.map((c) => (
+                        <td key={c} className="px-5 py-4 text-right font-mono tabular-nums">
+                          <Pending />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            {TARGETS.map((t) => (
-              <div key={t.label} className="rounded-2xl border border-line bg-card p-6">
+            {TARGETS.map((t, i) => (
+              <div key={t.label} style={stagger(i)} className="reveal rounded-2xl border border-line bg-card p-6">
                 <p className="text-sm font-medium text-ink-2">{t.label}</p>
                 <p className="mt-2 font-mono text-4xl font-medium tracking-[-0.02em] text-ink-2">
                   <span aria-hidden>—</span>

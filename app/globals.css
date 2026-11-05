@@ -379,8 +379,10 @@ main[id] {
       animation-range: entry calc(var(--i, 0) * 8%) entry calc(40% + var(--i, 0) * 8%);
     }
 
-    /* Pipeline: the line draws as the list nears the middle of the screen, and each step lights
-       as the line reaches it. Large screens only, where the steps sit in one row. */
+    /* Pipeline: three line segments sit between the step badges (never across one, because each
+       animated card is its own stacking context). They draw as the list nears the middle of the
+       screen, and each badge lights as the line reaches it. Large screens only, where the steps
+       sit in one row. Geometry: four columns with a 1rem gap, badge 2rem wide at 1.5rem inset. */
     .steps-scope {
       view-timeline: --steps block;
     }
@@ -390,20 +392,21 @@ main[id] {
         position: absolute;
         z-index: 10;
         top: 2.5rem;
-        left: calc(2.5rem + 1px);
-        right: calc((100% - 3rem) / 4 - 2.5rem + 1px);
+        left: calc(var(--k, 0) * (100% + 1rem) / 4 + 4rem + 1px);
+        width: calc((100% + 1rem) / 4 - 3rem);
         height: 2px;
         border-radius: 1px;
-      }
-      .connector-track {
         background: var(--line);
       }
       .connector-fill {
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
         background: var(--accent-strong);
         transform-origin: left;
         animation: grow-x linear both;
         animation-timeline: --steps;
-        animation-range: cover 12% cover 45%;
+        animation-range: cover calc(12% + var(--k, 0) * 11%) cover calc(23% + var(--k, 0) * 11%);
       }
       .node-lit {
         animation: fade-in linear both;

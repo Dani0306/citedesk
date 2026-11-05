@@ -1,6 +1,7 @@
 import { SampleLabel } from "./hero";
 import { SAMPLE_REFUSAL } from "./sample-data";
-import { Section } from "./ui";
+import { CheckIcon } from "./illustrations";
+import { Section, stagger } from "./ui";
 
 const POINTS = [
   "Decided in code from the retrieval score, not by asking the model to be careful.",
@@ -24,7 +25,25 @@ export function RefusalDemo() {
           <p className="mt-5 ml-auto w-fit max-w-[90%] rounded-2xl rounded-br-md bg-surface px-4 py-2.5 text-[0.9375rem]">
             {SAMPLE_REFUSAL.question}
           </p>
-          <div className="mt-5 flex gap-4">
+          {/* The retrieval check that happens before any text is written. Illustrative: no real score. */}
+          <div
+            role="img"
+            aria-label="Illustration: the best match scores below the confidence threshold, so the question is refused."
+            className="mt-5 rounded-xl bg-surface px-4 py-3"
+          >
+            <div className="flex items-center justify-between text-xs font-medium text-ink-2">
+              <span>Best match</span>
+              <span>Illustrative</span>
+            </div>
+            <div className="relative mt-3 h-2 rounded-full bg-line">
+              <div className="gauge-fill h-full w-[34%] rounded-full bg-ink-2" />
+              <div className="absolute -inset-y-1 left-[62%] w-0.5 rounded-full bg-ink" />
+            </div>
+            <div className="relative mt-2 h-4 text-xs text-ink-2">
+              <span className="absolute left-[62%] -translate-x-1/2 whitespace-nowrap">Threshold</span>
+            </div>
+          </div>
+          <div style={stagger(2)} className="reveal mt-5 flex gap-4">
             <svg aria-hidden viewBox="0 0 24 24" className="mt-0.5 size-6 shrink-0 text-ink-2" fill="none">
               <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.6" />
               <path
@@ -47,11 +66,9 @@ export function RefusalDemo() {
           </div>
         </figure>
         <ul className="space-y-5">
-          {POINTS.map((p) => (
-            <li key={p} className="flex gap-3">
-              <svg aria-hidden viewBox="0 0 20 20" className="mt-1 size-5 shrink-0 text-accent" fill="none">
-                <path d="M4.5 10.5l3.5 3.5 7.5-8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+          {POINTS.map((p, i) => (
+            <li key={p} style={stagger(i)} className="reveal flex gap-3">
+              <CheckIcon />
               <span className="text-pretty">{p}</span>
             </li>
           ))}

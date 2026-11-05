@@ -21,7 +21,6 @@ export function CitationDemo() {
   const cards = useRef(new Map<number, HTMLLIElement>());
   const bands = useRef<HTMLDivElement>(null);
   const picked = useRef(false);
-  const activeSource = sample.sources.find((s) => s.n === active);
 
   // Why an observer and not a CSS scroll timeline: CSS can restyle the highlight on scroll, but it
   // cannot update `active` or `aria-pressed`, so sighted and assistive-technology state would
