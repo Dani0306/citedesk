@@ -18,7 +18,7 @@ export function Logo() {
 
 export function Nav() {
   return (
-    <header className="glass sticky top-0 z-50 shadow-[0_1px_0_var(--line)]">
+    <header className="nav-edge glass sticky top-0 z-50">
       <Container className="flex h-14 items-center justify-between gap-3">
         <a href="#top" className="press -ml-1 flex items-center gap-2 rounded-lg px-1 py-1 font-semibold tracking-[-0.01em]">
           <Logo />
@@ -45,6 +45,8 @@ export function Nav() {
           <DemoButton id="nav-demo" size="small" />
         </nav>
       </Container>
+      {/* Reading progress; only shown where scroll timelines are supported. */}
+      <div aria-hidden className="progress-line absolute inset-x-0 bottom-0 h-0.5 bg-accent-strong" />
     </header>
   );
 }

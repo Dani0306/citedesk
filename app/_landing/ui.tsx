@@ -1,7 +1,12 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 export const GITHUB_URL = "https://github.com/Dani0306";
 export const PORTFOLIO_URL = "https://danielcolorado.dev";
+
+/** Position of an item in a staggered group; globals.css shifts the item's scroll range by it. */
+export function stagger(i: number): CSSProperties {
+  return { "--i": i } as CSSProperties;
+}
 
 export function Container({ children, className = "" }: { children: ReactNode; className?: string }) {
   return <div className={`mx-auto w-full max-w-270 px-4 sm:px-6 ${className}`}>{children}</div>;
@@ -24,7 +29,7 @@ export function Section({ id, eyebrow, title, intro, tone = "plain", children }:
       className={`py-20 sm:py-28 ${tone === "surface" ? "bg-surface" : ""}`}
     >
       <Container>
-        <header className="max-w-2xl">
+        <header className="reveal max-w-2xl">
           <p className="text-eyebrow text-accent">{eyebrow}</p>
           <h2 id={`${id}-title`} className="text-title mt-3 text-balance">
             {title}
@@ -104,9 +109,12 @@ export function Badge({ children, tone = "neutral" }: { children: ReactNode; ton
 }
 
 /** Inline citation marker for static (non-interactive) previews. */
-export function Marker({ n }: { n: number }) {
+export function Marker({ n, className = "", style }: { n: number; className?: string; style?: CSSProperties }) {
   return (
-    <span className="ml-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-md bg-accent-soft px-1 align-[0.1em] font-mono text-[0.75rem] font-medium text-accent">
+    <span
+      style={style}
+      className={`${className} ml-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-md bg-accent-soft px-1 align-[0.1em] font-mono text-[0.75rem] font-medium text-accent`}
+    >
       {n}
     </span>
   );

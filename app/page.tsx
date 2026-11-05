@@ -1,4 +1,5 @@
 import { Audience } from "./_landing/audience";
+import { BackToTop } from "./_landing/back-to-top";
 import { CitationDemo } from "./_landing/citation-demo";
 import { Cta } from "./_landing/cta";
 import { Evidence } from "./_landing/evidence";
@@ -44,6 +45,7 @@ export default function Home() {
         <Cta />
       </main>
       <Footer />
+      <BackToTop />
     </>
   );
 }

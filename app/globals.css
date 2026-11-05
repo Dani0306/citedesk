@@ -155,3 +155,291 @@ main[id] {
     scroll-behavior: auto;
   }
 }
+
+/* ------------------------------------------------------------------------------------------
+   Motion. Optional enhancement layered on a complete page.
+
+   Rules this block follows (see prompts/002-landing-motion-and-imagery.md):
+   - The default state of every element is its final state, so no JS, reduced motion or an
+     unsupported browser shows the whole page. Animations start from the hidden state only
+     inside the guards below.
+   - Scroll-linked animation needs both guards: reduced motion not requested, and support for
+     scroll timelines and animation-range. Deleting those blocks returns the 001 page.
+   - Only transform and opacity animate (the 20 px check icons also draw a stroke).
+   - `animation` resets animation-timeline and animation-range, so those come after it.
+   - Stagger shifts each item's animation-range through --i; animation-delay does not stagger
+     scroll timelines.
+   ------------------------------------------------------------------------------------------ */
+:root {
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --reveal-distance: 24px;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(var(--reveal-distance));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes grow-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes drift {
+  to {
+    transform: translateY(24px);
+  }
+}
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes glow-shift {
+  from {
+    transform: translateY(-48px);
+  }
+  to {
+    transform: translateY(48px);
+  }
+}
+@keyframes to-top-in {
+  from {
+    opacity: 0;
+    visibility: hidden;
+  }
+  to {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+/* Decorative layers that only make sense while scrolling: absent unless the guard turns them on. */
+.progress-line,
+.connector,
+.to-top {
+  display: none;
+}
+
+/* Static end state of the "no source" underline and the gauge, so they read without motion. */
+.underline-draw {
+  position: relative;
+  display: inline-block;
+}
+.underline-draw::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: -3px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--ink-2);
+  transform-origin: left;
+}
+.nav-edge::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--line);
+}
+.cta-glow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(48rem 24rem at 50% 50%, var(--accent-soft), transparent 70%);
+}
+.draw-icon path {
+  stroke-dashoffset: 0;
+}
+
+/* Load sequence for the hero preview: one pass, ease-out. */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-seq {
+    animation: fade-in 450ms var(--ease-out) backwards;
+    animation-delay: calc(var(--i, 0) * 260ms + 120ms);
+  }
+  .hero-pop {
+    animation: pop 320ms var(--ease-out) backwards;
+    animation-delay: calc(var(--i, 0) * 260ms + 420ms);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) and (animation-range: entry 0% exit 100%) {
+    /* Entrance: rise and fade while the element crosses into view. */
+    .reveal {
+      animation: fade-up linear both;
+      animation-timeline: view();
+      animation-range: entry calc(var(--i, 0) * 6%) entry calc(38% + var(--i, 0) * 6%);
+    }
+    /* Opacity-only variant for inline elements, where transforms do not apply. */
+    .fade-scroll {
+      animation: fade-in linear both;
+      animation-timeline: view();
+      animation-range: entry calc(20% + var(--i, 0) * 6%) entry calc(60% + var(--i, 0) * 6%);
+    }
+
+    /* The hero preview is below the fold on phones, so there it follows the scroll instead. */
+    @media (max-width: 767.98px) {
+      .hero-seq {
+        animation: fade-in linear both;
+        animation-timeline: view();
+        animation-range: entry calc(var(--i, 0) * 5%) entry calc(40% + var(--i, 0) * 5%);
+      }
+      .hero-pop {
+        animation: pop linear both;
+        animation-timeline: view();
+        animation-range: entry 30% entry 60%;
+      }
+    }
+    /* Scrolling away, the preview lags the page a little. */
+    .drift {
+      animation: drift linear both;
+      animation-timeline: view();
+      animation-range: exit 0% exit 100%;
+    }
+
+    .underline-draw::after {
+      animation: grow-x linear both;
+      animation-timeline: view();
+      animation-range: entry 40% entry 90%;
+    }
+    .draw-icon path {
+      stroke-dasharray: 1;
+      animation: draw linear both;
+      animation-timeline: view();
+      animation-range: entry 20% entry 80%;
+    }
+    .gauge-fill {
+      transform-origin: left;
+      animation: grow-x linear both;
+      animation-timeline: view();
+      animation-range: entry 10% entry 70%;
+    }
+
+    /* Page chrome: reading progress and the nav edge. */
+    .progress-line {
+      display: block;
+      transform-origin: left;
+      animation: grow-x linear both;
+      animation-timeline: scroll(root);
+    }
+    .nav-edge::after {
+      animation: fade-in linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0px 80px;
+    }
+    .to-top {
+      display: flex;
+      animation: to-top-in linear both;
+      animation-timeline: scroll(root);
+      animation-range: 40vh 70vh;
+    }
+
+    /* Evidence rows follow the table's own timeline: the rows sit inside a horizontal scroller,
+       which would otherwise be the scroll container that view() tracks. */
+    .table-scope {
+      view-timeline: --table block;
+    }
+    .reveal-row {
+      animation: fade-in linear both;
+      animation-timeline: --table;
+      animation-range: entry calc(var(--i, 0) * 8%) entry calc(40% + var(--i, 0) * 8%);
+    }
+
+    /* Pipeline: the line draws as the list nears the middle of the screen, and each step lights
+       as the line reaches it. Large screens only, where the steps sit in one row. */
+    .steps-scope {
+      view-timeline: --steps block;
+    }
+    @media (min-width: 1024px) {
+      .connector {
+        display: block;
+        position: absolute;
+        z-index: 10;
+        top: 2.5rem;
+        left: calc(2.5rem + 1px);
+        right: calc((100% - 3rem) / 4 - 2.5rem + 1px);
+        height: 2px;
+        border-radius: 1px;
+      }
+      .connector-track {
+        background: var(--line);
+      }
+      .connector-fill {
+        background: var(--accent-strong);
+        transform-origin: left;
+        animation: grow-x linear both;
+        animation-timeline: --steps;
+        animation-range: cover 12% cover 45%;
+      }
+      .node-lit {
+        animation: fade-in linear both;
+        animation-timeline: --steps;
+        animation-range: cover calc(12% + var(--i, 0) * 11%) cover calc(20% + var(--i, 0) * 11%);
+      }
+    }
+
+    .cta-glow::before {
+      animation: glow-shift linear both;
+      animation-timeline: view();
+      animation-range: cover 0% cover 100%;
+    }
+  }
+}
+
+/* Sticky stage for the citation story. Keep this query identical to STORY_QUERY in
+   citation-demo.tsx: the CSS and the observer must switch on together. The 800 px height floor
+   is where the stage (chips, answer, three sources) still fits under the nav. */
+.story-bands {
+  display: none;
+}
+@media (min-width: 1024px) and (min-height: 800px) and (prefers-reduced-motion: no-preference) {
+  .story {
+    position: relative;
+    min-height: 180vh;
+  }
+  .story-stage {
+    position: sticky;
+    top: 5rem;
+  }
+  .story-bands {
+    display: grid;
+    position: absolute;
+    inset: 0;
+    grid-template-rows: 45fr 25fr 30fr;
+    pointer-events: none;
+  }
+}
