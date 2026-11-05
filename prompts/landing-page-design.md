@@ -1,8 +1,6 @@
 # Landing page design: UI plan
 
-Status: plan only, no code written. Awaiting approval before the implementation prompt (`prompts/NNN-landing-page.md`) is created.
-
-Nothing below is built. The repo still has the default `create-next-app` page, `app/globals.css` with Arial, and the default metadata.
+Status: approved and built through `prompts/001-landing-page.md` (5 Nov 2026). That file records where the build departs from this plan.
 
 ## 1. Constraints from the project
 

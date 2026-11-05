@@ -301,3 +301,9 @@ Keep this current. Append one line per working session: date, what shipped, the 
 
 - **2026-11-04** — `AGENTS.md` rewritten in a numbered-section structure (persona, how to work, UI, docs to lean on, app structure, stack, decisions, data, ingestion, retrieval and answers, evals, gotchas, checks, build guide, when in doubt) modelled on a reference file; nothing dropped. The workflow loop, teaching, verify and measure bullets moved out of this file's working agreements so nothing is said twice. No code changed. Next: T01, choose the corpus (verify its licence), then T02.
 - **2026-11-04 (later)** — The T01–T48 task list is now mirrored in this file as the "Build order" checklist, so progress is ticked here and the details stay in `AGENTS.md` → 14. No code changed. Next: T01, choose the corpus (verify its licence), then T02.
+- **2026-11-05** — Landing page built on `feat/landing-page` (prompt 001; not in the T01–T48 guide, owner request). `/` is now a static page:
+  - hero, problem, a scripted citation demo (the only client island) and the honest-refusal state;
+  - how it works, and Evidence showing only "Pending" (the build fails if a run file appears before T27 wires it);
+  - audience, trust rules, FAQ and the call to action.
+
+  Design tokens use one accent colour and support light, dark, high-contrast and reduced-transparency modes. Text uses the system font, with Geist Mono for evidence. No new dependencies. Typecheck, lint, 8 tests and build pass; $0. A visual pass in a browser is still owed (none in this session). Next: owner click-through at 360/768/1280, merge, then T01.

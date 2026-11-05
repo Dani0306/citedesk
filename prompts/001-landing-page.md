@@ -1,6 +1,6 @@
 # 001 — Landing page
 
-**Status:** draft
+**Status:** done (visual check pending, see Results)
 **Branch:** `feat/landing-page`
 **Week:** 1 (not in the T01–T48 build guide; owner request, built from `prompts/landing-page-design.md`)
 
@@ -129,4 +129,22 @@ $0. No model, embedding or network calls.
 
 ## Results
 
-Filled in after the work.
+Built 5 Nov 2026 on `feat/landing-page`. $0, with no model or network calls.
+
+- **Checks:** typecheck, lint and `npm test` pass (8 tests: 2 existing plus 6 new for the sample data and the Evidence loader). `npm run build` prerenders `/` as fully static (○).
+- **Server-rendered HTML** (fetched from the running dev server):
+  - one `h1`;
+  - every section present, with no create-next-app content left;
+  - citation 1 rendered with `aria-pressed="true"`, so the demo reads without JavaScript;
+  - Evidence shows only "Pending";
+  - no errors in the dev log.
+- **Found and fixed:**
+  - **Build tracing:** Turbopack warned that `fs` on a variable path traced the whole project into the server bundle. Fixed with `/*turbopackIgnore: true*/`, since the page is static and never reads run files at runtime.
+  - **Mobile overflow:** a code review for 360px found that the unbroken source-URL line would overflow the card. Fixed with `break-all` and `min-w-0`.
+  - **Tailwind class names:** the IDE suggested canonical Tailwind v4 classes, and these were applied.
+- **Not verified by the agent:** the visual pass at 360, 768 and 1280 px in light and dark, the click on `[2]`, reduced motion and keyboard-only use. This session had no browser tool. These are manual test steps 2–7, which the owner runs.
+- **Deviations from the design plan** (recorded under Decisions):
+  - no scroll-reveal animation;
+  - system font instead of Geist Sans;
+  - no competitor names;
+  - the GitHub link goes to the profile until the repo is public.
