@@ -1,6 +1,6 @@
 # 003 — Phase 0 decisions and Phase 1 plumbing (T01–T06)
 
-**Status:** draft
+**Status:** done, except applying the T03 migration (see Results)
 **Branch:** `feat/db-cost-plumbing`, stacked on `feat/landing-motion` (PR #1, still open). Retarget it to `main` once #1 merges.
 **Week:** 1 (build guide Phase 0 and Phase 1)
 
@@ -169,4 +169,25 @@ $0. No model or embedding calls. The migration and smoke script run against the 
 
 ## Results
 
-Filled in after the work.
+Built 5 Nov 2026 on `feat/db-cost-plumbing`. $0, with no model or embedding calls.
+
+- **Phase 0:**
+  - **T01:** the owner picked Supabase `database` + `ai` at `aa9d04e`.
+  - **T02:** the owner picked top vector similarity.
+  - **Supabase project:** the owner picked the shared lab project `zatpmd…`.
+  - All three are recorded in `CLAUDE.md`, with the ten unanswerable topics.
+- **Checks:** typecheck, lint and build pass. `npm test` passes 40 tests, 32 of them new:
+  - `unwrap`: 7;
+  - pricing: 7;
+  - usage, `recordCall` and sinks: 10;
+  - the existing landing and model tests.
+- **Prices re-read 5 Nov:** unchanged for luna, sol and terra. Cache-write columns now appear on the pricing page (luna $0.125 for 30m), which closes that VERIFY.
+- **Found:**
+  - `.env.example` had never been committed. It has been recreated, with names only.
+  - The repo pointed at a new, empty Supabase project. `SUPABASE_URL` and `.mcp.json` now point at the lab project; no key was read or copied.
+- **Not done yet: applying T03.** This session's Supabase MCP connection was opened against the old project, so applying from here would create the schema in the wrong place. It waits on two things:
+  1. the lab project's `SUPABASE_SECRET_KEY` in `.env.local`;
+  2. a Claude Code restart, so the MCP reconnects to the lab project.
+
+  After that come `apply_migration`, the security advisors, exposing `citedesk` in the API settings, and `npm run db:smoke`. The migration SQL hasn't been executed anywhere yet, so its first apply is also its syntax check.
+- **Assumption still open:** cache writes counted inside `inputTokens`. `raw_usage` is stored so T09/T14's first live call can confirm it.

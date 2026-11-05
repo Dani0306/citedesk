@@ -72,15 +72,15 @@ Until it is deployed it stays in the "In the lab" section of the portfolio. Neve
 
 **Phase 0: Decisions**
 
-- [ ] T01 Choose the corpus (open decision 1), verify licence, pin the commit SHA, pick the 300–1000-chunk subset
-- [ ] T02 Choose the score that gates refusal (open decision 3)
+- [x] T01 Choose the corpus (open decision 1), verify licence, pin the commit SHA, pick the 300–1000-chunk subset
+- [x] T02 Choose the score that gates refusal (open decision 3)
 
 **Phase 1: Database and cost plumbing**
 
-- [ ] T03 📝 Migration: schema `citedesk`, `vector` extension, six tables, RLS, grants
-- [ ] T04 `lib/db` server-only client + grant-failure smoke test
-- [ ] T05 `lib/cost` dated pricing table + cost maths
-- [ ] T06 Model-call wrapper writing `model_calls`
+- [ ] T03 📝 Migration: schema `citedesk`, `vector` extension, six tables, RLS, grants (written; applying it waits on the lab key and an MCP restart)
+- [x] T04 `lib/db` server-only client + grant-failure smoke test (live `db:smoke` run waits on T03)
+- [x] T05 `lib/cost` dated pricing table + cost maths
+- [x] T06 Model-call wrapper writing `model_calls`
 
 **Phase 2: Ingest**
 
@@ -206,9 +206,9 @@ How to work (the prompt-and-approve loop, teaching rule, verifying against docs,
 
 Record the answer, the run that supports it, and the date when closed.
 
-1. **Corpus.** (a) Supabase docs: English, public, Daniel knows them. (b) IUE academic regulations in Spanish: useful to students and exercises multilingual, but public availability or permission must be verified. (c) Public healthcare-operations guidance: closest to Third Way Health work, so contamination risk is highest. **Recommendation:** whichever lets Daniel write 40 good questions fastest; (a) is the safest default. Facts for (a): the `supabase/supabase` repo is Apache-2.0 (GitHub API, 2 Nov) and the guides are `.mdx` files in `apps/docs/content/guides`, so source URLs and heading anchors can be derived deterministically. I found no separate content licence in `apps/docs` — VERIFY that before ingesting, and pin the commit SHA in `sources`. Ingest a subset (for example `guides/ai`, `database`) to land at 300–1000 chunks. A trap for (a): the model may already know Supabase from training, so a good answer does not prove retrieval worked; write the 10 unanswerable questions about things the subset does not cover but a model might plausibly know. If (b) is chosen, set the `fts` config to `'spanish'`.
+1. **Corpus. Decided 5 Nov 2026 (T01, owner): Supabase docs, `apps/docs/content/guides/database` + `guides/ai`, pinned at `supabase/supabase` commit `aa9d04e4f77447e2b6aaf317b686007aff05aa96` (master, 5 Nov).** 129 `.mdx` files (94 + 35). The rough estimate is ~380 chunks before heading splits and overlap, expected to land at 400–700; T12 measures the real count. Licence: the repo is Apache-2.0 (GitHub API), with no separate content licence or NOTICE in `apps/docs` and no root NOTICE. Excerpts are shown with attribution: "Source: Supabase docs (Apache-2.0), commit aa9d04e. Not affiliated with Supabase." URLs: `apps/docs/content/guides/<path>.mdx` maps to `https://supabase.com/docs/guides/<path>`; two samples were checked at HTTP 200. Full-text search uses `'english'`. Rejected: `auth` + `database` (closer to the chunk ceiling); IUE regulations (permission unverified, Spanish full-text). **Unanswerable topics** (outside the subset, but plausibly known by the model; T33 checks each against the ingested chunks before writing the questions): TOTP MFA in Supabase Auth · custom SMTP for auth emails · Storage upload size limits and resumable uploads · Edge Function cold starts · Realtime Broadcast rate limits · compute add-on prices · self-hosting env vars with Docker · branching previews with GitHub · creating an index in MongoDB · Firestore security rules.
 2. **Chunk size and overlap.** Start 500–800 tokens / ~15%; tune against the retrieval set.
-3. **Refusal threshold.** Tune against the 10 unanswerable questions. The scale depends on the score used (cosine similarity, RRF score and rerank score are on different scales), so first decide which score gates the refusal. **Recommendation:** gate on the vector similarity of the top chunk, since RRF scores are rank-based and not comparable across queries. Reference only: Supabase's Next.js vector-search guide filters matches at similarity 0.78 (`match_count` 10, `min_content_length` 50), read from a search excerpt. Thresholds depend on the embedding model, so use it as a starting point for the sweep, not as a value.
+3. **Refusal threshold.** **The gating score is decided (5 Nov 2026, T02, owner): the top vector-search chunk's cosine similarity, `1 − (embedding <=> query)`.** RRF scores are rank-based and not comparable across queries, and the rerank score disappears whenever rerank is skipped. **Still open: the threshold value,** swept in T33 against the 10 unanswerable questions. Reference only: Supabase's Next.js vector-search guide filters matches at similarity 0.78 (`match_count` 10, `min_content_length` 50), read from a search excerpt. Thresholds depend on the embedding model, so use it as a starting point for the sweep, not as a value.
 4. **Is reranking worth its latency and cost?** Decide from the ablation table: recall@5/MRR gain vs added p95 and cost per query (about +$0.003 by the estimate above).
 5. **Contextual retrieval?** Decide after the baseline: it costs one extra model call per chunk at ingest.
 6. **Reranker method.** Cohere Rerank was in the original plan but needs a key that isn't available, so reranking is an LLM call. Options: (a) listwise on `gpt-6-luna`, one call returning an ordered id list via structured output; (b) pointwise, one scored call per chunk (more calls, no position bias between candidates); (c) no rerank. A dedicated reranker can replace (a) later behind the same function. Whether OpenAI offers a rerank endpoint is VERIFY before building. **Recommendation:** (a) on top-50 → top-8, shuffle candidate order in evals, and let open decision 4 judge the result.
@@ -248,7 +248,7 @@ Gathered 2 Nov 2026 with Firecrawl (4 searches, 4 pages read). The scraped pages
 
 ## Cost model
 
-Read from vendor pages on 2 Nov 2026. The dated table in `lib/cost` is the source of truth once it exists; update this section from it.
+Read from vendor pages on 2 Nov 2026; the OpenAI rows were re-read on 5 Nov (unchanged) when `lib/cost/pricing.ts` was written. The dated table in `lib/cost` is the source of truth once it exists; update this section from it.
 
 | Item                                                | Price                                                                                                     |
 | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
@@ -258,7 +258,7 @@ Read from vendor pages on 2 Nov 2026. The dated table in `lib/cost` is the sourc
 | Batch                                               | about half the standard rate (luna $0.05 / $0.25)                                                         |
 | Prompts over 272K input tokens                      | higher long-context rates; irrelevant here (answers use ~6k)                                              |
 | `text-embedding-3-small`, per 1M tokens             | $0.02 (standard)                                                                                          |
-| Cache writes                                        | The caching guide describes a 1.25× write charge on GPT-5.6+ models; the pricing table shows none. VERIFY |
+| Cache writes, per 1M (read 5 Nov)                    | luna $0.125 (30m) / $0.25 (12h) · sol $2.50 / $5.00 · terra $1.25 / $2.50. 1.25× and 2.5× input; this project uses the 30m default |
 | Langfuse Cloud free tier limits                     | VERIFY                                                                                                    |
 
 Back-of-envelope, from the prices above (estimates; replace with measured values): embedding 1,000 chunks of ~650 tokens ≈ 650k tokens ≈ $0.013. One answer on luna with ~6k input and ~400 output tokens ≈ $0.0008. An LLM rerank of 50 chunks sends ~32k input tokens ≈ $0.003 per query, about 4× the answer itself, so reranking is a real cost line in the ablation table. A judged answer on sol (~3k in, ~300 out) ≈ $0.009. A full eval run (40 reranked queries + 50 answers + 50 judgements) ≈ $0.6. Caching saves only on the stable prefix (the system prompt), because retrieved chunks change per query, so expect a modest drop unless the prefix is long; the week-5 measurement decides what the README says.
@@ -309,4 +309,11 @@ Keep this current. Append one line per working session: date, what shipped, the 
   Design tokens use one accent colour and support light, dark, high-contrast and reduced-transparency modes. Text uses the system font, with Geist Mono for evidence. No new dependencies. Typecheck, lint, 8 tests and build pass; $0. A visual pass in a browser is still owed (none in this session). Next: owner click-through at 360/768/1280, merge, then T01.
 - **2026-11-05 (icon)** — Replaced the default Next.js favicon with the CiteDesk mark (the nav logo as a solid blue tile): `app/icon.svg` for tabs and `app/apple-icon.png` (180x180, rendered once with the `sharp` that ships with Next, no new dependency). `favicon.ico` removed. Trivial change, so no prompt file. Next: owner click-through of the landing page, then T01.
 - **2026-11-05** — Landing page second pass (prompt 002): CSS scroll-driven reveals behind `@supports` and `prefers-reduced-motion` guards (content visible by default), a sticky three-step citation story with click override and three sample-question chips, a refusal gauge, a pipeline line, a chunk diagram, an inline-SVG icon set, back-to-top and a generated Open Graph image. No new dependency; $0 model spend. Checked in headless Chrome (stepping, click override, reduced motion, no-JS, 390/768/1280); Safari, Firefox, Lighthouse and the throttled Performance check are still manual. Layout shift over a full scroll 0.002. Next: T01, choose the corpus (verify its licence), then T02.
+- **2026-11-05 (T01–T06)** — Phase 0 decided (prompt 003). T01: Supabase docs `database` + `ai` at `aa9d04e` (Apache-2.0, ~400–700 chunks estimated) plus 10 unanswerable topics. T02: refusal gated on the top chunk's vector similarity. CiteDesk now points at the shared lab project (`zatpmd…`); the repo had been configured for a new empty project. Phase 1 built:
+  - **T03:** migration with six `citedesk` tables, RLS and `service_role`-only grants (applying it waits on the lab key and an MCP restart);
+  - **T04:** `lib/db` with `unwrap()` and `npm run db:smoke`;
+  - **T05:** `lib/cost` priced 5 Nov, which closes the cache-write VERIFY;
+  - **T06:** `lib/calls` with `recordCall`, JSONL and DB sinks, and cache writes recorded.
+
+  `.env.example` recreated (it had never been committed). 40 tests; $0. Next: apply T03 and run `db:smoke`, then T07 (loader).
 - **2026-11-05 (later)** — Hero image generated with Higgsfield (GPT Image 2.6, transparent WebP, chosen over Nano Banana Pro, Seedream, FLUX and others by cost and fit): 3 drafts + 1 final = 5.75 credits (≈$0.40). Shipped as a 104 KB decorative image beside the headline on large screens only. Next: T01, choose the corpus (verify its licence), then T02.
