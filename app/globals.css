@@ -278,7 +278,8 @@ main[id] {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(48rem 24rem at 50% 50%, var(--accent-soft), transparent 70%);
+  /* closest-side: the glow fades out at the box edge, so a short section never clips it to a hard line. */
+  background: radial-gradient(ellipse closest-side at 50% 50%, var(--accent-soft), transparent);
 }
 .draw-icon path {
   stroke-dashoffset: 0;
