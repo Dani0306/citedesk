@@ -36,7 +36,7 @@ Daniel Colorado — full stack developer in Medellín (UTC−5). Software Engine
 
 - **Time:** 24 h/week around a full-time job and university.
 - **Budget:** this project $4–8/month; the whole roadmap under $20/month. Free tiers for hosting. Prices are in "Cost model" below.
-- Everything else (stack, shared lab Supabase project, data-safety rule, secrets) is in `AGENTS.md`.
+- Everything else (stack, CiteDesk's own Supabase project, data-safety rule, secrets) is in `AGENTS.md`.
 
 ---
 
@@ -77,7 +77,7 @@ Until it is deployed it stays in the "In the lab" section of the portfolio. Neve
 
 **Phase 1: Database and cost plumbing**
 
-- [ ] T03 📝 Migration: schema `citedesk`, `vector` extension, six tables, RLS, grants (written; applying it waits on the lab key and an MCP restart)
+- [ ] T03 📝 Migration: schema `citedesk`, `vector` extension, six tables, RLS, grants (written; applying it waits on an MCP reload onto project `fscvgp…`)
 - [x] T04 `lib/db` server-only client + grant-failure smoke test (live `db:smoke` run waits on T03)
 - [x] T05 `lib/cost` dated pricing table + cost maths
 - [x] T06 Model-call wrapper writing `model_calls`
@@ -309,11 +309,12 @@ Keep this current. Append one line per working session: date, what shipped, the 
   Design tokens use one accent colour and support light, dark, high-contrast and reduced-transparency modes. Text uses the system font, with Geist Mono for evidence. No new dependencies. Typecheck, lint, 8 tests and build pass; $0. A visual pass in a browser is still owed (none in this session). Next: owner click-through at 360/768/1280, merge, then T01.
 - **2026-11-05 (icon)** — Replaced the default Next.js favicon with the CiteDesk mark (the nav logo as a solid blue tile): `app/icon.svg` for tabs and `app/apple-icon.png` (180x180, rendered once with the `sharp` that ships with Next, no new dependency). `favicon.ico` removed. Trivial change, so no prompt file. Next: owner click-through of the landing page, then T01.
 - **2026-11-05** — Landing page second pass (prompt 002): CSS scroll-driven reveals behind `@supports` and `prefers-reduced-motion` guards (content visible by default), a sticky three-step citation story with click override and three sample-question chips, a refusal gauge, a pipeline line, a chunk diagram, an inline-SVG icon set, back-to-top and a generated Open Graph image. No new dependency; $0 model spend. Checked in headless Chrome (stepping, click override, reduced motion, no-JS, 390/768/1280); Safari, Firefox, Lighthouse and the throttled Performance check are still manual. Layout shift over a full scroll 0.002. Next: T01, choose the corpus (verify its licence), then T02.
-- **2026-11-05 (T01–T06)** — Phase 0 decided (prompt 003). T01: Supabase docs `database` + `ai` at `aa9d04e` (Apache-2.0, ~400–700 chunks estimated) plus 10 unanswerable topics. T02: refusal gated on the top chunk's vector similarity. CiteDesk now points at the shared lab project (`zatpmd…`); the repo had been configured for a new empty project. Phase 1 built:
-  - **T03:** migration with six `citedesk` tables, RLS and `service_role`-only grants (applying it waits on the lab key and an MCP restart);
+- **2026-11-05 (T01–T06)** — Phase 0 decided (prompt 003). T01: Supabase docs `database` + `ai` at `aa9d04e` (Apache-2.0, ~400–700 chunks estimated) plus 10 unanswerable topics. T02: refusal gated on the top chunk's vector similarity. The first pass pointed CiteDesk at the shared lab project (`zatpmd…`, PaperTrail's), but the owner then chose the new, empty project `fscvgp…` it was already configured for, so the config was reverted and the rule changed to "CiteDesk has its own Supabase project". Phase 1 built:
+  - **T03:** migration with six `citedesk` tables, RLS and `service_role`-only grants (applying it waits on an MCP reload onto project `fscvgp…`);
   - **T04:** `lib/db` with `unwrap()` and `npm run db:smoke`;
   - **T05:** `lib/cost` priced 5 Nov, which closes the cache-write VERIFY;
   - **T06:** `lib/calls` with `recordCall`, JSONL and DB sinks, and cache writes recorded.
 
   `.env.example` recreated (it had never been committed). 40 tests; $0. Next: apply T03 and run `db:smoke`, then T07 (loader).
 - **2026-11-05 (later)** — Hero image generated with Higgsfield (GPT Image 2.6, transparent WebP, chosen over Nano Banana Pro, Seedream, FLUX and others by cost and fit): 3 drafts + 1 final = 5.75 credits (≈$0.40). Shipped as a 104 KB decorative image beside the headline on large screens only. Next: T01, choose the corpus (verify its licence), then T02.
+- **2026-11-05 (project)** — Owner decision: CiteDesk uses its **own Supabase project `fscvgp…`**, not the shared lab project that hosts PaperTrail (`zatpmd…`). `.env.local`, `.mcp.json` and `.env.example` point at `fscvgp…`; AGENTS.md and CLAUDE.md no longer say "shared lab project". The Supabase MCP in the running session still reports `zatpmd…` until Claude Code is restarted, so **T03 must not be applied until the MCP reports `fscvgp…`**. Next: restart, confirm with `get_project_url`, apply T03, expose `citedesk` in the API settings, run `db:smoke`.
