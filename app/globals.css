@@ -1,26 +1,449 @@
 @import "tailwindcss";
 
+/* One accent, neutral surfaces. Contrast pairs checked for WCAG AA:
+   ink-2 on surface ≥ 4.6:1, accent on bg ≥ 5.2:1, white on accent-strong ≥ 4.7:1. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --surface: #f5f5f7;
+  --card: #ffffff;
+  --ink: #1d1d1f;
+  --ink-2: #6e6e73;
+  --line: rgb(0 0 0 / 0.1);
+  --accent: #0066cc;
+  --accent-strong: #0071e3;
+  --accent-hover: #0062c4;
+  --accent-soft: rgb(0 113 227 / 0.1);
+  --nav: rgb(255 255 255 / 0.72);
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 12px 32px rgb(0 0 0 / 0.07);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #000000;
+    --surface: #111113;
+    --card: #1c1c1e;
+    --ink: #f5f5f7;
+    --ink-2: #a1a1a6;
+    --line: rgb(255 255 255 / 0.14);
+    --accent: #2997ff;
+    --accent-strong: #0071e3;
+    --accent-soft: rgb(41 151 255 / 0.16);
+    --nav: rgb(0 0 0 / 0.7);
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.5), 0 12px 32px rgb(0 0 0 / 0.55);
   }
 }
 
+@media (prefers-contrast: more) {
+  :root {
+    --line: rgb(0 0 0 / 0.5);
+    --ink-2: #48484a;
+  }
+}
+
+@media (prefers-contrast: more) and (prefers-color-scheme: dark) {
+  :root {
+    --line: rgb(255 255 255 / 0.55);
+    --ink-2: #d1d1d6;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  /* The platform font ships optical sizing and tracking tables; Geist Mono is only for evidence. */
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  line-height: 1.5;
+  font-optical-sizing: auto;
+}
+
+/* Clear the sticky nav when jumping to an anchor. */
+section[id],
+main[id] {
+  scroll-margin-top: 4.5rem;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+/* Type scale: tracking tightens and leading closes as size grows; body stays near zero. */
+@utility text-display {
+  font-size: clamp(2.5rem, 7vw, 4.75rem);
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+  font-weight: 700;
+}
+
+@utility text-title {
+  font-size: clamp(1.875rem, 4vw, 3rem);
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+  font-weight: 700;
+}
+
+@utility text-lead {
+  font-size: clamp(1.125rem, 2vw, 1.3125rem);
+  line-height: 1.45;
+  letter-spacing: -0.005em;
+}
+
+@utility text-eyebrow {
+  font-size: 0.875rem;
+  line-height: 1.3;
+  font-weight: 600;
+}
+
+/* Feedback on press, not release. Transitions retarget from the current value, which is
+   enough here: nothing on this page is dragged or flicked. */
+@utility press {
+  transition:
+    transform 100ms ease-out,
+    background-color 150ms ease-out,
+    border-color 150ms ease-out,
+    color 150ms ease-out;
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    &:active:not(:disabled) {
+      transform: none;
+    }
+  }
+}
+
+/* Translucent chrome; content scrolls underneath. */
+@utility glass {
+  background: var(--nav);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  @media (prefers-reduced-transparency: reduce) {
+    background: var(--bg);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* ------------------------------------------------------------------------------------------
+   Motion. Optional enhancement layered on a complete page.
+
+   Rules this block follows (see prompts/002-landing-motion-and-imagery.md):
+   - The default state of every element is its final state, so no JS, reduced motion or an
+     unsupported browser shows the whole page. Animations start from the hidden state only
+     inside the guards below.
+   - Scroll-linked animation needs both guards: reduced motion not requested, and support for
+     scroll timelines and animation-range. Deleting those blocks returns the 001 page.
+   - Only transform and opacity animate (the 20 px check icons also draw a stroke).
+   - `animation` resets animation-timeline and animation-range, so those come after it.
+   - Stagger shifts each item's animation-range through --i; animation-delay does not stagger
+     scroll timelines.
+   ------------------------------------------------------------------------------------------ */
+:root {
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --reveal-distance: 24px;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(var(--reveal-distance));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes grow-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes drift {
+  to {
+    transform: translateY(24px);
+  }
+}
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes glow-shift {
+  from {
+    transform: translateY(-48px);
+  }
+  to {
+    transform: translateY(48px);
+  }
+}
+@keyframes to-top-in {
+  from {
+    opacity: 0;
+    visibility: hidden;
+  }
+  to {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+/* Decorative layers that only make sense while scrolling: absent unless the guard turns them on. */
+.progress-line,
+.connector,
+.to-top {
+  display: none;
+}
+
+/* Static end state of the "no source" underline and the gauge, so they read without motion. */
+.underline-draw {
+  position: relative;
+  display: inline-block;
+}
+.underline-draw::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: -3px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--ink-2);
+  transform-origin: left;
+}
+.nav-edge::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--line);
+}
+.cta-glow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* closest-side: the glow fades out at the box edge, so a short section never clips it to a hard line. */
+  background: radial-gradient(ellipse closest-side at 50% 50%, var(--accent-soft), transparent);
+}
+.draw-icon path {
+  stroke-dashoffset: 0;
+}
+
+/* Load sequence for the hero preview: one pass, ease-out. */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-seq {
+    animation: fade-in 450ms var(--ease-out) backwards;
+    animation-delay: calc(var(--i, 0) * 260ms + 120ms);
+  }
+  .hero-pop {
+    animation: pop 320ms var(--ease-out) backwards;
+    animation-delay: calc(var(--i, 0) * 260ms + 420ms);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) and (animation-range: entry 0% exit 100%) {
+    /* Entrance: rise and fade while the element crosses into view. */
+    .reveal {
+      animation: fade-up linear both;
+      animation-timeline: view();
+      animation-range: entry calc(var(--i, 0) * 6%) entry calc(38% + var(--i, 0) * 6%);
+    }
+    /* Opacity-only variant for inline elements, where transforms do not apply. */
+    .fade-scroll {
+      animation: fade-in linear both;
+      animation-timeline: view();
+      animation-range: entry calc(20% + var(--i, 0) * 6%) entry calc(60% + var(--i, 0) * 6%);
+    }
+
+    /* The hero preview is below the fold on phones, so there it follows the scroll instead. */
+    @media (max-width: 767.98px) {
+      .hero-seq {
+        animation: fade-in linear both;
+        animation-timeline: view();
+        animation-range: entry calc(var(--i, 0) * 5%) entry calc(40% + var(--i, 0) * 5%);
+      }
+      .hero-pop {
+        animation: pop linear both;
+        animation-timeline: view();
+        animation-range: entry 30% entry 60%;
+      }
+    }
+    /* Scrolling away, the preview lags the page a little. */
+    .drift {
+      animation: drift linear both;
+      animation-timeline: view();
+      animation-range: exit 0% exit 100%;
+    }
+
+    .underline-draw::after {
+      animation: grow-x linear both;
+      animation-timeline: view();
+      animation-range: entry 40% entry 90%;
+    }
+    .draw-icon path {
+      stroke-dasharray: 1;
+      animation: draw linear both;
+      animation-timeline: view();
+      animation-range: entry 20% entry 80%;
+    }
+    .gauge-fill {
+      transform-origin: left;
+      animation: grow-x linear both;
+      animation-timeline: view();
+      animation-range: entry 10% entry 70%;
+    }
+
+    /* Page chrome: reading progress and the nav edge. */
+    .progress-line {
+      display: block;
+      transform-origin: left;
+      animation: grow-x linear both;
+      animation-timeline: scroll(root);
+    }
+    .nav-edge::after {
+      animation: fade-in linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0px 80px;
+    }
+    .to-top {
+      display: flex;
+      animation: to-top-in linear both;
+      animation-timeline: scroll(root);
+      animation-range: 40vh 70vh;
+    }
+
+    /* Evidence rows follow the table's own timeline: the rows sit inside a horizontal scroller,
+       which would otherwise be the scroll container that view() tracks. */
+    .table-scope {
+      view-timeline: --table block;
+    }
+    .reveal-row {
+      animation: fade-in linear both;
+      animation-timeline: --table;
+      animation-range: entry calc(var(--i, 0) * 8%) entry calc(40% + var(--i, 0) * 8%);
+    }
+
+    /* Pipeline: three line segments sit between the step badges (never across one, because each
+       animated card is its own stacking context). They draw as the list nears the middle of the
+       screen, and each badge lights as the line reaches it. Large screens only, where the steps
+       sit in one row. Geometry: four columns with a 1rem gap, badge 2rem wide at 1.5rem inset. */
+    .steps-scope {
+      view-timeline: --steps block;
+    }
+    @media (min-width: 1024px) {
+      .connector {
+        display: block;
+        position: absolute;
+        z-index: 10;
+        top: 2.5rem;
+        left: calc(var(--k, 0) * (100% + 1rem) / 4 + 4rem + 1px);
+        width: calc((100% + 1rem) / 4 - 3rem);
+        height: 2px;
+        border-radius: 1px;
+        background: var(--line);
+      }
+      .connector-fill {
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: var(--accent-strong);
+        transform-origin: left;
+        animation: grow-x linear both;
+        animation-timeline: --steps;
+        animation-range: cover calc(12% + var(--k, 0) * 11%) cover calc(23% + var(--k, 0) * 11%);
+      }
+      .node-lit {
+        animation: fade-in linear both;
+        animation-timeline: --steps;
+        animation-range: cover calc(12% + var(--i, 0) * 11%) cover calc(20% + var(--i, 0) * 11%);
+      }
+    }
+
+    .cta-glow::before {
+      animation: glow-shift linear both;
+      animation-timeline: view();
+      animation-range: cover 0% cover 100%;
+    }
+  }
+}
+
+/* Sticky stage for the citation story. Keep this query identical to STORY_QUERY in
+   citation-demo.tsx: the CSS and the observer must switch on together. The 800 px height floor
+   is where the stage (chips, answer, three sources) still fits under the nav. */
+.story-bands {
+  display: none;
+}
+@media (min-width: 1024px) and (min-height: 800px) and (prefers-reduced-motion: no-preference) {
+  .story {
+    position: relative;
+    min-height: 180vh;
+  }
+  .story-stage {
+    position: sticky;
+    top: 5rem;
+  }
+  .story-bands {
+    display: grid;
+    position: absolute;
+    inset: 0;
+    grid-template-rows: 45fr 25fr 30fr;
+    pointer-events: none;
+  }
 }
