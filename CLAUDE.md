@@ -77,7 +77,7 @@ Until it is deployed it stays in the "In the lab" section of the portfolio. Neve
 
 **Phase 1: Database and cost plumbing**
 
-- [ ] T03 📝 Migration: schema `citedesk`, `vector` extension, six tables, RLS, grants (written; applying it waits on an MCP reload onto project `fscvgp…`)
+- [x] T03 📝 Migration: schema `citedesk`, `vector` extension, six tables, RLS, grants (applied 5 Nov to `fscvgp…`; exposing the schema in the API settings is the owner's one dashboard step)
 - [x] T04 `lib/db` server-only client + grant-failure smoke test (live `db:smoke` run waits on T03)
 - [x] T05 `lib/cost` dated pricing table + cost maths
 - [x] T06 Model-call wrapper writing `model_calls`
@@ -318,3 +318,4 @@ Keep this current. Append one line per working session: date, what shipped, the 
   `.env.example` recreated (it had never been committed). 40 tests; $0. Next: apply T03 and run `db:smoke`, then T07 (loader).
 - **2026-11-05 (later)** — Hero image generated with Higgsfield (GPT Image 2.6, transparent WebP, chosen over Nano Banana Pro, Seedream, FLUX and others by cost and fit): 3 drafts + 1 final = 5.75 credits (≈$0.40). Shipped as a 104 KB decorative image beside the headline on large screens only. Next: T01, choose the corpus (verify its licence), then T02.
 - **2026-11-05 (project)** — Owner decision: CiteDesk uses its **own Supabase project `fscvgp…`**, not the shared lab project that hosts PaperTrail (`zatpmd…`). `.env.local`, `.mcp.json` and `.env.example` point at `fscvgp…`; AGENTS.md and CLAUDE.md no longer say "shared lab project". The Supabase MCP in the running session still reports `zatpmd…` until Claude Code is restarted, so **T03 must not be applied until the MCP reports `fscvgp…`**. Next: restart, confirm with `get_project_url`, apply T03, expose `citedesk` in the API settings, run `db:smoke`.
+- **2026-11-05 (T03 applied)** — Confirmed the session MCP reports `fscvgp…` (CiteDesk's own project; PaperTrail is `zatpmd…`) and that the database was empty, then applied the migration. Verified in the database: 6 tables, RLS on with 0 policies, `service_role` has read/write, `anon` and `authenticated` have no table or schema access, `embedding` is `vector(1536)`, `vector` 0.8.2 in the `extensions` schema, 11 indexes. Security advisor: only the expected INFO "RLS enabled, no policy" ×6, which is the design. `db:smoke` before exposure prints `PGRST106: Invalid schema: citedesk` for all six tables, not `0 rows`. Next: owner exposes `citedesk` in Settings → API → Exposed schemas, `db:smoke` shows six `0 rows`, then T07 (loader).

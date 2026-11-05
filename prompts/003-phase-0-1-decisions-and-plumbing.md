@@ -1,6 +1,6 @@
 # 003 — Phase 0 decisions and Phase 1 plumbing (T01–T06)
 
-**Status:** done, except applying the T03 migration (see Results)
+**Status:** done, except exposing the schema in the dashboard and the second `db:smoke` run (see the T03 update)
 **Branch:** `feat/db-cost-plumbing`, stacked on `feat/landing-motion` (PR #1, still open). Retarget it to `main` once #1 merges.
 **Week:** 1 (build guide Phase 0 and Phase 1)
 
@@ -191,3 +191,15 @@ Built 5 Nov 2026 on `feat/db-cost-plumbing`. $0, with no model or embedding call
 
   After that come `apply_migration`, the security advisors, exposing `citedesk` in the API settings, and `npm run db:smoke`. The migration SQL hasn't been executed anywhere yet, so its first apply is also its syntax check.
 - **Assumption still open:** cache writes counted inside `inputTokens`. `raw_usage` is stored so T09/T14's first live call can confirm it.
+
+
+### Update, T03 applied (5 Nov 2026)
+
+The project question was settled (owner: CiteDesk's own project `fscvgp…`) and the session MCP then reported `fscvgp…`, with no custom schemas and an empty `public`. The migration applied on the first attempt. Checked in the database:
+
+- six tables with RLS on and no policies; `service_role` has read/write; `anon` and `authenticated` have no table or schema access;
+- `chunks.embedding` is `vector(1536)`; `vector` 0.8.2 is installed in `extensions`; 11 indexes;
+- security advisor: six INFO notes "RLS enabled, no policy", which is intended;
+- `npm run db:smoke` before the schema is exposed: `PGRST106: Invalid schema: citedesk` on all six, so a missing exposure is an error and not an empty result.
+
+Still open: expose `citedesk` in the dashboard, then a second `db:smoke` run expecting six `0 rows`. The Supabase MCP tools can't change the exposed-schemas setting, so it stays a manual step.
