@@ -158,7 +158,8 @@ export function CitationDemo() {
                       on ? "border-accent bg-card shadow-(--shadow)" : "border-line bg-card/60"
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-3">
+                    {/* min-h-5 reserves the badge's height, so a card does not grow when it becomes the cited one. */}
+                    <div className="flex min-h-5 items-center justify-between gap-3">
                       <p className="flex min-w-0 items-center gap-2 font-mono text-xs text-ink-2">
                         <span className={`font-medium ${on ? "text-accent" : ""}`}>{s.n}</span>
                         {pathOf(s)}
