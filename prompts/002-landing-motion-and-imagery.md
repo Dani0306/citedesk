@@ -1,6 +1,6 @@
 # 002 — Landing page: scroll motion and imagery
 
-**Status:** draft (waiting for owner approval)
+**Status:** done (owner checks pending, see Results)
 **Branch:** `feat/landing-motion` (from `feat/landing-page`, because prompt 001 isn't merged to `main` yet)
 **Week:** 1 (not in the T01–T48 build guide; owner request, built from `prompts/landing-page-design.md` §9)
 
@@ -44,6 +44,7 @@ The landing page from prompt 001 gets scroll-driven motion, a set of coded illus
   - the keyword-search card gets a sequenced "0 results" fade instead of a strike-through, because striking the query would imply the query was wrong;
   - result bars in Evidence are **not built**: no run data exists and the loader throws on real run files until T27, so they would be dead code. They arrive with T27;
   - no `<Reveal>` component: a class plus a `stagger(i)` helper does the same without an extra wrapper element.
+  - recorded during the build: hero sentences fade in without moving (transforms don't apply to inline text, and `inline-block` would break line wrapping); the pipeline line is three segments between the badges, not one line, because each animated card is its own stacking context and a continuous line would cross the badges; the trust list has icons but no drawn check marks, because a check beside a rule that isn't built yet would read as "done"; the CTA glow uses `closest-side` so it fades out at the box edge instead of clipping.
 - **The Open Graph and Twitter images carry words only** (wordmark, "Answers you can check.", the one-line description, "In the lab"). No numbers, no fake UI.
 - **Assumptions.** (1) The owner's answers hold: sticky story yes, coded SVG only (no AI-generated art, no credits), static page for old browsers, quick wins = sample chips and back-to-top. If sticky feels wrong in the browser, it's one media block plus the observer to remove. (2) The 800 px height threshold is a guess; tune it in the browser.
 
@@ -138,4 +139,14 @@ $0 in model spend. Verifying browser support for this plan used 5 Firecrawl cred
 
 ## Results
 
-Filled in after the work.
+Built 5 Nov 2026 on `feat/landing-motion` (7 commits). $0 in model spend; 5 Firecrawl credits for the browser-support check.
+
+- **Checks:** typecheck, lint and `npm test` pass (16 tests: the sample-data rules now run for each of three samples). `npm run build` prerenders `/`, `/opengraph-image` and `/twitter-image` as static. No new dependency.
+- **Verified by the agent in headless Chrome** (driven over the DevTools protocol from the scratchpad; Chrome has scroll timelines):
+  - desktop 1280×900, light and dark, a full scroll: progress line, reveals, gauge, pipeline segments, back-to-top and glow all render; mobile 390 and tablet 768 have no horizontal overflow;
+  - the sticky stage steps citation 1 → 2 → 3 while scrolling and returns to 1 on the way back; a click on `[2]` stops scroll-driven changes; a sample chip switches the sources, resets to 1 and announces it;
+  - `prefers-reduced-motion: reduce` leaves `document.getAnimations()` at 0 and the stage non-sticky; at 1280×700 and at 768 the stage is non-sticky; with JavaScript disabled the page is complete;
+  - `/opengraph-image` is a 1200×630 PNG and the page head carries `og:image` and `twitter:image` plus the card tags (the file convention adds them, so `layout.tsx` is unchanged).
+- **Found and fixed:** a source card grew 4 px when it gained the "Cited" badge, which became a layout shift once scrolling could trigger it. Reserved the height; layout shift over a full scroll went from 0.013 to about 0.002 in the dev server (Lighthouse not run). The OG headline wrapped and crowded the text below; its size was reduced.
+- **Known limits:** `metadataBase` is unset, so build output warns and `og:image` points at `http://localhost:3000`; that is fixed with the domain at deploy (T43). The hero load sequence plays once on load, so on a desktop first screen it is seen, and on phones the preview follows the scroll instead.
+- **Not verified by the agent:** Safari and Firefox (support per MDN, not tested), real touch, a keyboard-only pass, Lighthouse, and the Performance-panel check with 4× CPU throttling (manual steps 6, 9 and 10). A visual review of how it feels in motion also needs your eyes; screenshots are still frames.

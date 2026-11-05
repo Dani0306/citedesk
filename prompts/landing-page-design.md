@@ -2,7 +2,7 @@
 
 Status: approved and built through `prompts/001-landing-page.md` (5 Nov 2026). That file records where the build departs from this plan.
 
-Section 9 (added 5 Nov 2026) plans a second pass: scroll animations and imagery. It is a plan only: not approved, not built.
+Section 9 (added 5 Nov 2026) plans a second pass: scroll animations and imagery. It was approved and built through `prompts/002-landing-motion-and-imagery.md`, which records where the build departs from section 9.
 
 ## 1. Constraints from the project
 
