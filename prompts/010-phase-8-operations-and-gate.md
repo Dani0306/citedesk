@@ -1,6 +1,6 @@
 # 010 — Phase 8: operations and the regression gate (T38–T42)
 
-**Status:** draft
+**Status:** done (T38, T39, T41, T42; T40 gate and smoke); `evals/baseline.json` waits on T22
 **Branch:** `feat/ops-gate` (from `main` after PR #8)
 **Week:** 5 (build guide Phase 8)
 
@@ -190,4 +190,30 @@
 
 ## Results
 
-Filled in after the work.
+- **Owner decisions (6 Nov):** add the five tracing dependencies, and have me set the three CI secrets with `gh secret set`. They went over stdin, never printed; `gh secret list` shows names only.
+- **T38, `npm run eval:cache`** (run files committed in `evals/runs/`):
+
+  | Config | U (first ask, implicit) | R (exact repeat) | O (caching off) | Break-even r* |
+  |---|---|---|---|---|
+  | hybrid + rerank | $0.001730 | $0.000746 | $0.001426 | 31% |
+  | vector | $0.000302 | $0.000120 | $0.000245 | 31% |
+
+  - **Caching off was really off** (0 write tokens): explicit mode with no breakpoint disables caching, as the docs said.
+  - **With rerank on, a repeat's *answer* call never hit.** The reranker's order isn't deterministic, so the top 8 and the answer prompt change: 3,123 vs 3,415 tokens for the same question. The rerank call itself hit on 3 of 4 repeats.
+  - Caching is best-effort: 1 in 4 exact repeats missed on each config.
+  - **Decision:** the demo keeps implicit caching. The sample chips should push the repeat share past 31%, and the worst case (all unique questions) costs about $0.00006 more an answer. `query_log` will measure the real share after the deploy.
+- **T39:**
+  - The first traced `ask` arrived as **separate** traces (the embedding, and the generation as "invoke_agent gpt-6-luna").
+  - Fix: a `traced()` parent span on a `citedesk` tracer, plus a `shouldExportSpan` that keeps Langfuse's default filter and adds that tracer. Without it, the processor would drop our span.
+  - Confirmed through the Langfuse MCP: the trace `citedesk.ask` holds the embedding and the generation.
+  - Ingestion lag is about a minute, which explained the first empty queries.
+- **T40:**
+  - the gate's tests pass: 2.0 points passes, 2.1 fails, a hash mismatch fails, a missing config fails, any hallucinated citation fails, and refusal rates are held in the right direction;
+  - `eval:gate` with no baseline prints a notice and exits 0;
+  - a live `eval:smoke` (3 questions, `CITEDESK_LOG_DB=0`) cost $0.0000012 and wrote the gitignored `ci-smoke.json`.
+- **T41:** both workflows parse, and the action SHAs match their tags (checked with `gh api`). The first CI runs happen on push.
+- **T42:**
+  - `/api/playground` answered "When should I pick HNSW over IVFFlat?" (hybrid + rerank): the reranker put fused #2 and #3 first and fused #1 third, and pulled in #4 and #6;
+  - in headless Chrome: 22 rows, 5 cited, a `[1]` click highlighted and focused its row, and 0 px overflow at 390 px.
+- **Spend:** ≈ $0.022.
+- **Checks:** 227 tests pass; typecheck, lint, build and `eval:report --check` are clean.

@@ -1,0 +1,376 @@
+{
+  "kind": "cache",
+  "createdAt": "2026-11-06T23:36:13.191Z",
+  "gitSha": "620b2cb2151e-dirty",
+  "note": null,
+  "config": {
+    "name": "vector",
+    "retrieval": "vector",
+    "k": 8,
+    "candidates": 50,
+    "rrfK": 60,
+    "rerank": false,
+    "rerankPromptVersion": 1,
+    "threshold": 0.6,
+    "thresholdSource": "provisional",
+    "answerModel": "gpt-6-luna",
+    "reasoning": "low",
+    "maxOutputTokens": 1500,
+    "promptVersion": 1,
+    "cacheMode": "implicit"
+  },
+  "pricesReadOn": "2026-11-05",
+  "questions": [
+    "How do I create a partial index?",
+    "How do I enable row level security on a table?",
+    "When should I pick HNSW over IVFFlat?",
+    "How do I enable the pgvector extension?"
+  ],
+  "costUsd": 0.00266897,
+  "passes": [
+    {
+      "pass": "implicit-first",
+      "perQuestion": [
+        {
+          "question": "How do I create a partial index?",
+          "refused": false,
+          "costUsd": 0.00042871,
+          "latencyMs": 4066,
+          "calls": [
+            {
+              "purpose": "embed_query",
+              "inputTokens": 8,
+              "cachedInputTokens": 0,
+              "cacheWriteTokens": 0,
+              "outputTokens": 0,
+              "costUsd": 1.6e-7,
+              "latencyMs": 769
+            },
+            {
+              "purpose": "answer",
+              "inputTokens": 3197,
+              "cachedInputTokens": 0,
+              "cacheWriteTokens": 3194,
+              "outputTokens": 58,
+              "costUsd": 0.00042855,
+              "latencyMs": 1660
+            }
+          ]
+        },
+        {
+          "question": "How do I enable row level security on a table?",
+          "refused": false,
+          "costUsd": 0.00035952,
+          "latencyMs": 2582,
+          "calls": [
+            {
+              "purpose": "embed_query",
+              "inputTokens": 11,
+              "cachedInputTokens": 0,
+              "cacheWriteTokens": 0,
+              "outputTokens": 0,
+              "costUsd": 2.2e-7,
+              "latencyMs": 413
+            },
+            {
+              "purpose": "answer",
+              "inputTokens": 2559,
+              "cachedInputTokens": 0,
+              "cacheWriteTokens": 2556,
+              "outputTokens": 79,
+              "costUsd": 0.0003593,
+              "latencyMs": 1596
+            }
+          ]
+        },
+        {
+          "question": "When should I pick HNSW over IVFFlat?",
+          "refused": false,
+          "costUsd": 0.00020842,
+          "latencyMs": 2796,
+          "calls": [
+            {
+              "purpose": "embed_query",
+              "inputTokens": 12,
+              "cachedInputTokens": 0,
+              "cacheWriteTokens": 0,
+              "outputTokens": 0,
+              "costUsd": 2.4e-7,
+              "latencyMs": 372
+            },
+            {
+              "purpose": "answer",
+              "inputTokens": 1278,
+              "cachedInputTokens": 0,
+              "cacheWriteTokens": 1275,
+              "outputTokens": 97,
+              "costUsd": 0.00020818,
+              "latencyMs": 1841
+            }
+          ]
+        },
+        {
+          "question": "How do I enable the pgvector extension?",
+          "refused": false,
+          "costUsd": 0.00021136,
+          "latencyMs": 2280,
+          "calls": [
+            {
+              "purpose": "embed_query",
+              "inputTokens": 9,
+              "cachedInputTokens": 0,
+              "cacheWriteTokens": 0,
+              "outputTokens": 0,
+              "costUsd": 1.8e-7,
+              "latencyMs": 343
+            },
+            {
+              "purpose": "answer",
+              "inputTokens": 1462,
+              "cachedInputTokens": 0,
+              "cacheWriteTokens": 1459,
+              "outputTokens": 57,
+              "costUsd": 0.00021118,
+              "latencyMs": 1382
+            }
+          ]
+        }
+      ],
+      "costPerQuestionUsd": 0.0003020025,
+      "cacheReadShare": 0,
+      "cacheWriteShare": 0.998587570621469,
+      "p50LatencyMs": 2582
+    },
+    {
+      "pass": "implicit-repeat",
+      "perQuestion": [
+        {
+          "question": "How do I create a partial index?",
+          "refused": false,
+          "costUsd": 0.0000624,
+          "latencyMs": 2146,
+          "calls": [
+            {
+              "purpose": "embed_query",
+              "inputTokens": 8,
+              "cachedInputTokens": 0,
+              "cacheWriteTokens": 0,
+              "outputTokens": 0,
+              "costUsd": 1.6e-7,
+              "latencyMs": 335
+            },
+            {
+              "purpose": "answer",
+              "inputTokens": 3197,
+              "cachedInputTokens": 3194,
+              "cacheWriteTokens": 0,
+              "outputTokens": 60,
+              "costUsd": 0.00006224,
+              "latencyMs": 1371
+            }
+          ]
+        },
+        {
+          "question": "How do I enable row level security on a table?",
+          "refused": false,
+          "costUsd": 0.0003089,
+          "latencyMs": 2378,
+          "calls": [
+            {
+              "purpose": "embed_query",
+              "inputTokens": 11,
+              "cachedInputTokens": 0,
+              "cacheWriteTokens": 0,
+              "outputTokens": 0,
+              "costUsd": 2.2e-7,
+              "latencyMs": 369
+            },
+            {
+              "purpose": "answer",
+              "inputTokens": 2218,
+              "cachedInputTokens": 0,
+              "cacheWriteTokens": 2215,
+              "outputTokens": 63,
+              "costUsd": 0.00030868,
+              "latencyMs": 1546
+            }
+          ]
+        },
+        {
+          "question": "When should I pick HNSW over IVFFlat?",
+          "refused": false,
+          "costUsd": 0.00006429,
+          "latencyMs": 3241,
+          "calls": [
+            {
+              "purpose": "embed_query",
+              "inputTokens": 12,
+              "cachedInputTokens": 0,
+              "cacheWriteTokens": 0,
+              "outputTokens": 0,
+              "costUsd": 2.4e-7,
+              "latencyMs": 449
+            },
+            {
+              "purpose": "answer",
+              "inputTokens": 1278,
+              "cachedInputTokens": 1275,
+              "cacheWriteTokens": 0,
+              "outputTokens": 102,
+              "costUsd": 0.00006405,
+              "latencyMs": 2311
+            }
+          ]
+        },
+        {
+          "question": "How do I enable the pgvector extension?",
+          "refused": false,
+          "costUsd": 0.00004407,
+          "latencyMs": 1966,
+          "calls": [
+            {
+              "purpose": "embed_query",
+              "inputTokens": 9,
+              "cachedInputTokens": 0,
+              "cacheWriteTokens": 0,
+              "outputTokens": 0,
+              "costUsd": 1.8e-7,
+              "latencyMs": 313
+            },
+            {
+              "purpose": "answer",
+              "inputTokens": 1462,
+              "cachedInputTokens": 1459,
+              "cacheWriteTokens": 0,
+              "outputTokens": 58,
+              "costUsd": 0.00004389,
+              "latencyMs": 1218
+            }
+          ]
+        }
+      ],
+      "costPerQuestionUsd": 0.00011991499999999999,
+      "cacheReadShare": 0.7269160024524831,
+      "cacheWriteShare": 0.2716125076640098,
+      "p50LatencyMs": 2146
+    },
+    {
+      "pass": "off",
+      "perQuestion": [
+        {
+          "question": "How do I create a partial index?",
+          "refused": false,
+          "costUsd": 0.00035086,
+          "latencyMs": 2341,
+          "calls": [
+            {
+              "purpose": "embed_query",
+              "inputTokens": 8,
+              "cachedInputTokens": 0,
+              "cacheWriteTokens": 0,
+              "outputTokens": 0,
+              "costUsd": 1.6e-7,
+              "latencyMs": 342
+            },
+            {
+              "purpose": "answer",
+              "inputTokens": 3197,
+              "cachedInputTokens": 0,
+              "cacheWriteTokens": 0,
+              "outputTokens": 62,
+              "costUsd": 0.0003507,
+              "latencyMs": 1553
+            }
+          ]
+        },
+        {
+          "question": "How do I enable row level security on a table?",
+          "refused": false,
+          "costUsd": 0.00028402,
+          "latencyMs": 2907,
+          "calls": [
+            {
+              "purpose": "embed_query",
+              "inputTokens": 11,
+              "cachedInputTokens": 0,
+              "cacheWriteTokens": 0,
+              "outputTokens": 0,
+              "costUsd": 2.2e-7,
+              "latencyMs": 341
+            },
+            {
+              "purpose": "answer",
+              "inputTokens": 2218,
+              "cachedInputTokens": 0,
+              "cacheWriteTokens": 0,
+              "outputTokens": 124,
+              "costUsd": 0.0002838,
+              "latencyMs": 2169
+            }
+          ]
+        },
+        {
+          "question": "When should I pick HNSW over IVFFlat?",
+          "refused": false,
+          "costUsd": 0.00017304,
+          "latencyMs": 2828,
+          "calls": [
+            {
+              "purpose": "embed_query",
+              "inputTokens": 12,
+              "cachedInputTokens": 0,
+              "cacheWriteTokens": 0,
+              "outputTokens": 0,
+              "costUsd": 2.4e-7,
+              "latencyMs": 322
+            },
+            {
+              "purpose": "answer",
+              "inputTokens": 1278,
+              "cachedInputTokens": 0,
+              "cacheWriteTokens": 0,
+              "outputTokens": 90,
+              "costUsd": 0.0001728,
+              "latencyMs": 2086
+            }
+          ]
+        },
+        {
+          "question": "How do I enable the pgvector extension?",
+          "refused": false,
+          "costUsd": 0.00017338,
+          "latencyMs": 2316,
+          "calls": [
+            {
+              "purpose": "embed_query",
+              "inputTokens": 9,
+              "cachedInputTokens": 0,
+              "cacheWriteTokens": 0,
+              "outputTokens": 0,
+              "costUsd": 1.8e-7,
+              "latencyMs": 326
+            },
+            {
+              "purpose": "answer",
+              "inputTokens": 1462,
+              "cachedInputTokens": 0,
+              "cacheWriteTokens": 0,
+              "outputTokens": 54,
+              "costUsd": 0.0001732,
+              "latencyMs": 1606
+            }
+          ]
+        }
+      ],
+      "costPerQuestionUsd": 0.000245325,
+      "cacheReadShare": 0,
+      "cacheWriteShare": 0,
+      "p50LatencyMs": 2341
+    }
+  ],
+  "U": 0.0003020025,
+  "R": 0.00011991499999999999,
+  "O": 0.000245325,
+  "breakEvenRepeatShare": 0.31126518843962375,
+  "warning": null
+}
