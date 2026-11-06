@@ -101,11 +101,11 @@ Until it is deployed it stays in the "In the lab" section of the portfolio. Neve
 
 **Phase 4: Retrieval eval baseline**
 
-- [ ] T18 📝 Eval Zod schemas, `chunk_key` labels, scorer
-- [ ] T19 Metrics: recall@5, recall@20, MRR, nDCG@10
-- [ ] T20 ✋ Write and label the 40 questions
-- [ ] T21 `eval:retrieval` runner and run files
-- [ ] T22 Run naive vector; record the baseline row
+- [x] T18 📝 Eval Zod schemas, `chunk_key` labels, scorer
+- [x] T19 Metrics: recall@5, recall@20, MRR, nDCG@10 (plus recall@8, what reaches the answer model)
+- [ ] T20 ✋ Write and label the 40 questions (owner writes all 40, decided 6 Nov; tooling and 3 worked examples in `evals/questions.json`)
+- [x] T21 `eval:retrieval` runner and run files
+- [ ] T22 Run naive vector; record the baseline row (waits on T20)
 
 **Phase 5: Hybrid, rerank, ablation**
 
@@ -331,3 +331,4 @@ Keep this current. Append one line per working session: date, what shipped, the 
   Deps added: `gpt-tokenizer` 4.1.0, `github-slugger` 2.0.0. 64 tests. Project spend $0.0042. Next: T12 (the owner's 10 searches), then T13.
 - **2026-11-05 (Phase 3, prompt 005)** — T13–T17 built and run live: `lib/retrieve/vector.ts` (`vectorSearch` over `match_documents`), `lib/answer` (static instructions then numbered sources then the question; `[n]` validator; refusal gate; `answerQuestion` with injected deps), `lib/db/query-log.ts` (buffered calls written with `query_id` after the row), additive migration (answer, refusal_reason, invalid_citations, uncited_sentences), `npm run ask`. **Provisional threshold 0.60** from 10 probes (in-scope 0.664–0.721, out-of-corpus 0.341–0.501). 6 live questions: 4 answered with **0 invalid markers** at $0.00023–$0.00043 and 2.8–3.9 s, 2 refused on `low_score` for the embedding alone (~$0.0000003). Findings: every answer call wrote ~the whole prompt to the cache at 1.25× (+~23% per answer, a T38 decision); the pg_cron page is a stub, so a pg_cron question passed the gate at 0.602 and got an answer from model memory with a valid-but-wrong citation. `reasoning: "low"` produced 0 reasoning tokens. 115 tests. Phase spend ≈ $0.0013; project ≈ $0.0055. Next: T12 (owner's 10 searches) if not done, then T18 (eval schemas and scorer).
 - **2026-11-06** — Phase 3 closed out: prompt 005's acceptance criteria ticked after re-verifying `npm run search` on `vectorSearch` live; the three migration files renamed to the versions the database records (the MCP assigns its own timestamps), with the rule added to `AGENTS.md` §12. No code change, $0.000001. Next: merge PR #4, T12 (owner's 10 searches), then T18.
+- **2026-11-06 (Phase 4, prompt 006)** — Retrieval eval tooling built: Zod schemas for questions and run files (`evals/schema.ts`), label normalisation and checks (`evals/labels.ts`; a merged sub-section's label is pointed at its parent's key, via a new `anchors` list on `groupSections`), recall@5/@8/@20, MRR and nDCG@10 with each section credited once (`evals/metrics.ts`, hand-computed tests), the `eval:retrieval` runner (spend cap, run file + `eval_runs` row), `eval:check` and `eval:keys`. Owner decided to write all 40 questions by hand (no AI drafts). Plumbing run on the 3 worked examples: estimate = actual = $0.00000122, `eval_runs` 1 (file not kept: not a baseline); the no-keyword paraphrase r02 missed at 20. 135 tests. Next: T20 (owner writes and labels 40, `eval:check` clean), then T22.

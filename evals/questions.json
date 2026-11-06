@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "questions": [
+    {
+      "id": "r01",
+      "question": "I only ever query rows where deleted is false. Can I build an index that leaves the other rows out?",
+      "answerable": true,
+      "expected": ["database/postgres/indexes#partial-indexes"],
+      "tags": ["database", "paraphrase", "worked-example"],
+      "note": "Worked example: keep, edit or replace."
+    },
+    {
+      "id": "r02",
+      "question": "My embeddings table is empty today and will keep growing. Which kind of vector index should I create now?",
+      "answerable": true,
+      "expected": [
+        "ai/vector-indexes/hnsw-indexes#when-should-you-create-hnsw-indexes",
+        "ai/vector-indexes/ivf-indexes#when-should-you-create-ivfflat-indexes",
+        "ai/going-to-prod#hnsw-vs-ivfflat-indexes"
+      ],
+      "tags": ["ai", "multi", "worked-example"],
+      "note": "Worked example of a multi-section label: keep, edit or replace."
+    },
+    {
+      "id": "r03",
+      "question": "How do I stop the auto-generated API from handing out every row of a new table?",
+      "answerable": true,
+      "expected": [
+        "https://supabase.com/docs/guides/database/tables#enabling-row-level-security",
+        "database/postgres/row-level-security#secure-a-table-with-rls"
+      ],
+      "tags": ["database", "paraphrase", "worked-example"],
+      "note": "Worked example: a label can be a live URL or a chunk_key."
+    }
+  ]
+}

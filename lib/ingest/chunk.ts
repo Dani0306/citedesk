@@ -44,18 +44,20 @@ export function chunkingHash(settings: ChunkSettings = CHUNKING): string {
 /**
  * Groups each section with the sub-sections that directly follow it (deeper headings, before the
  * next heading at its own depth or above) while the total fits in maxTokens. The text before the
- * first heading absorbs nothing. A sub-section that doesn't fit starts its own group.
+ * first heading absorbs nothing. A sub-section that doesn't fit starts its own group. `anchors`
+ * lists the head's anchor and every absorbed one, so eval labels can be pointed at the right key.
  */
 export function groupSections(
   sections: Section[],
   settings: ChunkSettings = CHUNKING,
   count: CountTokens = countTokens,
-): { head: Section; body: string }[] {
-  const groups: { head: Section; body: string }[] = [];
+): { head: Section; body: string; anchors: string[] }[] {
+  const groups: { head: Section; body: string; anchors: string[] }[] = [];
   let i = 0;
   while (i < sections.length) {
     const head = sections[i];
     let body = head.body;
+    const anchors = [head.anchor];
     let j = i + 1;
     if (settings.mergeSubsections && head.depth > 0) {
       while (j < sections.length && sections[j].depth > head.depth) {
@@ -63,10 +65,11 @@ export function groupSections(
         const candidate = `${body}\n\n${"#".repeat(child.depth)} ${child.headingPath.at(-1)}\n\n${child.body}`;
         if (count(candidate) > settings.maxTokens) break;
         body = candidate;
+        anchors.push(child.anchor);
         j++;
       }
     }
-    groups.push({ head, body });
+    groups.push({ head, body, anchors });
     i = j;
   }
   return groups;
