@@ -4,7 +4,6 @@
 // hybrid-rerank adds one gpt-6-luna call per question (~$0.0015, worst case ~$0.0026). Each config has a default cap.
 import path from "node:path";
 import { writeFileSync } from "node:fs";
-import { combineSinks, dbSink, jsonlSink } from "../lib/calls/sinks";
 import { db } from "../lib/db/client";
 import { openaiEmbed } from "../lib/ingest/embed";
 import { supabaseKeyword } from "../lib/retrieve/keyword";
@@ -13,11 +12,11 @@ import { supabaseMatch } from "../lib/retrieve/vector";
 import { makeConfigs } from "../evals/configs";
 import { runRetrieval } from "../evals/retrieval";
 import type { RetrievalRun } from "../evals/schema";
-import { arg, checkedQuestions, gitSha, insertEvalRun, main, maxUsdArg, runFile } from "./eval-shared";
+import { arg, checkedQuestions, gitSha, insertEvalRun, main, maxUsdArg, runFile, scriptSink } from "./eval-shared";
 
 const pts = (x: number) => (x * 100).toFixed(1).padStart(5);
 
-function printSummary(run: RetrievalRun, file: string, evalRunId: number) {
+function printSummary(run: RetrievalRun, file: string, evalRunId: number | null) {
   const m = run.metrics;
   console.log(`\n${run.config.name} · ${run.questionCount} questions (${run.skippedUnanswerable} unanswerable skipped) · hash ${run.questionsHash.slice(0, 12)}`);
   console.log("recall@5  recall@8  recall@20    MRR  nDCG@10   (points)");
@@ -29,7 +28,7 @@ function printSummary(run: RetrievalRun, file: string, evalRunId: number) {
     console.log(`\nMissed at 20 (${misses.length}):`);
     for (const r of misses) console.log(`  ${r.id}  ${r.question}\n        expected ${r.expected.join(", ")}\n        got #1 ${r.retrieved[0]?.chunkKey ?? "—"}`);
   }
-  console.log(`\nWrote ${path.relative(process.cwd(), file)} · eval_runs ${evalRunId}`);
+  console.log(`\nWrote ${path.relative(process.cwd(), file)} · eval_runs ${evalRunId ?? "not written"}`);
 }
 
 main(async () => {
@@ -53,7 +52,7 @@ main(async () => {
       match: supabaseMatch(db()),
       keyword: supabaseKeyword(db()),
       rerank: openaiRerank,
-      sink: combineSinks(jsonlSink(), dbSink(db())),
+      sink: scriptSink(),
     },
     { maxUsd, gitSha: gitSha(), note: arg("note") ?? null, date, onQuestion: (done, total) => process.stdout.write(`\r${done}/${total}`) },
   );

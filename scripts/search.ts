@@ -7,6 +7,7 @@ import { openaiEmbed } from "../lib/ingest/embed";
 import { searchCandidates } from "../lib/retrieve/hybrid";
 import { supabaseKeyword } from "../lib/retrieve/keyword";
 import { DEFAULT_RRF_K } from "../lib/retrieve/rrf";
+import { startTracing } from "../lib/telemetry";
 import { supabaseMatch } from "../lib/retrieve/vector";
 
 async function main() {
@@ -31,7 +32,11 @@ async function main() {
   }
 }
 
-main().catch((e) => {
-  console.error(e instanceof Error ? e.message : e);
-  process.exit(1);
-});
+const tracing = startTracing();
+main()
+  .then(() => tracing.flush())
+  .catch(async (e) => {
+    console.error(e instanceof Error ? e.message : e);
+    await tracing.flush().catch(() => {});
+    process.exit(1);
+  });

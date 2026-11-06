@@ -39,6 +39,7 @@ export const openaiJudge: JudgeFn = async ({ model, instructions, prompt, reason
       maxOutputTokens,
       timeout: 60_000,
       providerOptions: { openai: { store: false } },
+      telemetry: { functionId: "citedesk.judge" },
     });
     return { output: r.output, usage: r.usage, finishReason: r.finishReason };
   } catch (error) {

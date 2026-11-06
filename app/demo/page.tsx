@@ -15,9 +15,14 @@ export default function DemoPage() {
     <main className="min-h-dvh bg-bg">
       <Container className="pt-10 sm:pt-16">
         <div className="mx-auto max-w-3xl">
-        <Link href="/" className="text-sm text-ink-2 underline-offset-4 hover:underline">
-          ← CiteDesk
-        </Link>
+        <div className="flex gap-4 text-sm text-ink-2">
+          <Link href="/" className="underline-offset-4 hover:underline">
+            ← CiteDesk
+          </Link>
+          <Link href="/playground" className="underline-offset-4 hover:underline">
+            Retrieval playground
+          </Link>
+        </div>
         <header className="mt-6">
           <p className="text-eyebrow text-accent">Demo · in the lab</p>
           <h1 className="text-title mt-3 text-balance">Ask the Supabase docs.</h1>

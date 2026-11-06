@@ -1,0 +1,94 @@
+# The regression gate (T40/T41, CLAUDE.md → Evaluation). Costs money, so:
+#   push            → eval:smoke: retrieval only, vector, ~10 questions, about $0.000003
+#   PR to main      → retrieval for all three configs + generation on vector, each gated against
+#   (or by hand)      evals/baseline.json; capped at $1 in total, about $0.09 a run
+# It skips with a notice when a secret is missing (forks never get secrets). Runs log to JSONL only
+# (CITEDESK_LOG_DB=0), so CI never adds rows to the demo's model_calls or eval_runs. The judge is not
+# run here: its labels belong to one labelled run, so calibration stays an offline step.
+name: Eval gate
+
+on:
+  push:
+  pull_request:
+    branches: [main]
+    paths:
+      - "lib/**"
+      - "evals/**"
+      - "scripts/eval*.ts"
+      - "supabase/migrations/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eval-gate-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CITEDESK_LOG_DB: "0"
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check for the secrets
+        id: secrets
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        # Retrieval reads citedesk.chunks, so the gate needs the database as well as OpenAI.
+        run: |
+          if [ -n "$OPENAI_API_KEY" ] && [ -n "$SUPABASE_URL" ] && [ -n "$SUPABASE_SECRET_KEY" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::OPENAI_API_KEY, SUPABASE_URL or SUPABASE_SECRET_KEY is not available to this run, so the eval gate was skipped."
+            echo "Eval gate skipped: a required secret is not available to this run." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - if: steps.secrets.outputs.present == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - if: steps.secrets.outputs.present == 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+      - if: steps.secrets.outputs.present == 'true'
+        run: npm ci
+
+      - name: Smoke (retrieval only)
+        if: steps.secrets.outputs.present == 'true' && github.event_name == 'push'
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: npm run eval:smoke -- --max-usd=0.01
+
+      - name: Full suite (retrieval × 3, generation), each gated
+        if: steps.secrets.outputs.present == 'true' && github.event_name != 'push'
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        # Spend caps add up to $1: 0.05 + 0.05 + 0.5 + 0.4.
+        run: |
+          set -e
+          npm run eval:retrieval -- --config=vector --max-usd=0.05 --out=evals/runs/ci-retrieval-vector.json --note=ci
+          npm run eval:gate -- --run=evals/runs/ci-retrieval-vector.json
+          npm run eval:retrieval -- --config=hybrid --max-usd=0.05 --out=evals/runs/ci-retrieval-hybrid.json --note=ci
+          npm run eval:gate -- --run=evals/runs/ci-retrieval-hybrid.json
+          npm run eval:retrieval -- --config=hybrid-rerank --max-usd=0.5 --out=evals/runs/ci-retrieval-hybrid-rerank.json --note=ci
+          npm run eval:gate -- --run=evals/runs/ci-retrieval-hybrid-rerank.json
+          npm run eval:generation -- --config=vector --max-usd=0.4 --out=evals/runs/ci-generation-vector.json --note=ci
+          npm run eval:gate -- --run=evals/runs/ci-generation-vector.json
+
+      - name: Keep the run files
+        if: always() && steps.secrets.outputs.present == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: eval-runs
+          path: evals/runs/ci-*.json
+          if-no-files-found: ignore
+          retention-days: 30

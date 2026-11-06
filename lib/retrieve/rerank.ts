@@ -24,6 +24,7 @@ export type RerankFn = (args: {
   prompt: string;
   reasoning: "none" | "low" | "medium";
   maxOutputTokens: number;
+  cacheMode: "implicit" | "off";
 }) => Promise<{ output: unknown; usage: LanguageModelUsage; finishReason: string }>;
 
 /**
@@ -31,7 +32,7 @@ export type RerankFn = (args: {
  * comes back as an unusable output with its usage instead of a throw; the check then logs it as
  * invalid_output.
  */
-export const openaiRerank: RerankFn = async ({ model, instructions, prompt, reasoning, maxOutputTokens }) => {
+export const openaiRerank: RerankFn = async ({ model, instructions, prompt, reasoning, maxOutputTokens, cacheMode }) => {
   try {
     const r = await generateText({
       model: openai(model),
@@ -41,7 +42,9 @@ export const openaiRerank: RerankFn = async ({ model, instructions, prompt, reas
       reasoning,
       maxOutputTokens,
       timeout: 20_000,
-      providerOptions: { openai: { store: false } },
+      // Same switch as answers (lib/answer/answer.ts openaiOptions), inlined to keep retrieve free of answer imports.
+      providerOptions: { openai: { store: false, ...(cacheMode === "off" ? { promptCacheOptions: { mode: "explicit" as const } } : {}) } },
+      telemetry: { functionId: "citedesk.rerank" },
     });
     return { output: r.output, usage: r.usage, finishReason: r.finishReason };
   } catch (error) {
@@ -58,6 +61,8 @@ export type RerankOptions = {
   maxTokensPerCandidate: number;
   reasoning: "none" | "low" | "medium";
   maxOutputTokens: number;
+  /** Prompt caching for the rerank call (T38); "implicit" unless a run says otherwise. */
+  cacheMode?: "implicit" | "off";
   /** Evals pass one to shuffle candidates reproducibly (position bias); the app keeps fused order. */
   shuffleSeed?: number;
 };
@@ -152,6 +157,7 @@ export async function rerankChunks(
           prompt: buildRerankPrompt(question, presented, opts),
           reasoning: opts.reasoning,
           maxOutputTokens: opts.maxOutputTokens,
+          cacheMode: opts.cacheMode ?? "implicit",
         }),
       fromText,
       { check: problem },

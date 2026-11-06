@@ -4,8 +4,10 @@ import { execSync } from "node:child_process";
 import { existsSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
+import { combineSinks, dbSink, jsonlSink } from "../lib/calls/sinks";
 import { db } from "../lib/db/client";
 import { unwrap } from "../lib/db/result";
+import { startTracing } from "../lib/telemetry";
 import { loadQuestions, QUESTIONS_FILE, validateQuestions } from "../evals/inputs";
 
 export const arg = (name: string) => process.argv.slice(2).find((a) => a.startsWith(`--${name}=`))?.split("=").slice(1).join("=");
@@ -17,9 +19,11 @@ export function gitSha(): string {
 
 export const RUNS_DIR = path.join(process.cwd(), "evals", "runs");
 
-/** evals/runs/YYYY-MM-DD-<kind>[-<name>].json, numbered if that name is taken. */
+/** evals/runs/YYYY-MM-DD-<kind>[-<name>].json, numbered if that name is taken; `--out=` overrides (CI). */
 export function runFile(kind: string, name: string | null, date: Date): string {
   mkdirSync(RUNS_DIR, { recursive: true });
+  const out = arg("out");
+  if (out) return path.resolve(out);
   const base = `${date.toISOString().slice(0, 10)}-${kind}${name ? `-${name}` : ""}`;
   for (let n = 1; ; n++) {
     const file = path.join(RUNS_DIR, `${base}${n === 1 ? "" : `-${n}`}.json`);
@@ -46,13 +50,25 @@ export async function checkedQuestions() {
   return set;
 }
 
-export async function insertEvalRun(row: { kind: "retrieval" | "generation" | "judge"; config: unknown; models: unknown; prices_read_on: string; cost_usd: number; results: unknown }): Promise<number> {
+/** The eval_runs copy of a run file; skipped (null) under CITEDESK_LOG_DB=0, so CI writes nothing to the database. */
+export async function insertEvalRun(row: { kind: "retrieval" | "generation" | "judge"; config: unknown; models: unknown; prices_read_on: string; cost_usd: number; results: unknown }): Promise<number | null> {
+  if (process.env.CITEDESK_LOG_DB === "0") return null;
   return z.object({ id: z.number() }).parse(unwrap(await db().from("eval_runs").insert(row).select("id").single())).id;
 }
 
+/** JSONL always; the model_calls table too, unless CITEDESK_LOG_DB=0 (CI, so eval runs don't count toward the demo's daily cap). */
+export function scriptSink() {
+  return process.env.CITEDESK_LOG_DB === "0" ? jsonlSink() : combineSinks(jsonlSink(), dbSink(db()));
+}
+
+/** Runs a script with tracing on (when configured) and its spans flushed before exit. */
 export function main(run: () => Promise<void>) {
-  run().catch((e) => {
-    console.error(e instanceof Error ? e.message : e);
-    process.exit(1);
-  });
+  const tracing = startTracing();
+  run()
+    .then(() => tracing.flush())
+    .catch(async (e) => {
+      console.error(e instanceof Error ? e.message : e);
+      await tracing.flush().catch(() => {});
+      process.exit(1);
+    });
 }

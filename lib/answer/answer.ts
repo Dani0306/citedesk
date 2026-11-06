@@ -21,6 +21,19 @@ export const Question = z.string().trim().min(1).max(2000);
 
 export type Reasoning = "none" | "low" | "medium";
 
+/**
+ * Prompt caching (T38). "implicit" is OpenAI's default: the whole prompt is cache-written (1.25×
+ * input) so an exact repeat reads it back at 0.1×. "off" sends explicit mode with no breakpoint,
+ * which per the provider docs disables caching. Which is cheaper depends on how often questions
+ * repeat; `npm run eval:cache` measures the break-even.
+ */
+export type CacheMode = "implicit" | "off";
+
+/** Provider options shared by every OpenAI call: nothing stored, and caching as configured. */
+export function openaiOptions(cacheMode: CacheMode) {
+  return { openai: { store: false, ...(cacheMode === "off" ? { promptCacheOptions: { mode: "explicit" as const } } : {}) } };
+}
+
 export type AnswerConfig = {
   retrieval: RetrievalMode;
   /** Chunks sent to the answer model. */
@@ -36,6 +49,7 @@ export type AnswerConfig = {
   reasoning: Reasoning;
   maxOutputTokens: number;
   promptVersion: number;
+  cacheMode: CacheMode;
 };
 
 export type GenerateFn = (args: {
@@ -44,10 +58,11 @@ export type GenerateFn = (args: {
   prompt: string;
   reasoning: Reasoning;
   maxOutputTokens: number;
+  cacheMode: CacheMode;
 }) => Promise<{ text: string; usage: LanguageModelUsage; finishReason: string }>;
 
 /** The real answer call. store: false, because nothing needs the generation kept at OpenAI. */
-export const openaiGenerate: GenerateFn = ({ model, instructions, prompt, reasoning, maxOutputTokens }) =>
+export const openaiGenerate: GenerateFn = ({ model, instructions, prompt, reasoning, maxOutputTokens, cacheMode }) =>
   generateText({
     model: openai(model),
     instructions,
@@ -55,7 +70,8 @@ export const openaiGenerate: GenerateFn = ({ model, instructions, prompt, reason
     reasoning,
     maxOutputTokens,
     timeout: 30_000,
-    providerOptions: { openai: { store: false } },
+    providerOptions: openaiOptions(cacheMode),
+    telemetry: { functionId: "citedesk.answer" },
   });
 
 type Common = {
@@ -65,6 +81,8 @@ type Common = {
   retrieved: RankedChunk[];
   topVectorSimilarity: number | null;
   rerankStatus: "off" | "applied" | "skipped";
+  /** Every candidate before the rerank, in fused (or vector) order: what the playground shows. */
+  pool?: RankedChunk[];
   latencyMs: number;
 };
 
@@ -112,6 +130,7 @@ export function defaultConfig(env: Record<string, string | undefined> = process.
     reasoning: "low",
     maxOutputTokens: 1500,
     promptVersion: ANSWER_PROMPT_VERSION,
+    cacheMode: "implicit",
   };
 }
 
@@ -124,7 +143,7 @@ export async function prepareAnswer(rawQuestion: string, deps: PrepareDeps, conf
   const pool = config.retrieval === "hybrid" || config.rerank ? config.candidates : config.k;
   const { chunks, topVector } = await searchCandidates(question, { mode: config.retrieval, count: pool, rrfK: config.rrfK }, deps);
   const latency = () => Math.round(now() - start);
-  const base = { question, config, topVectorSimilarity: topVector?.similarity ?? null };
+  const base = { question, config, topVectorSimilarity: topVector?.similarity ?? null, pool: chunks };
 
   const before = gate(topVector?.similarity ?? null, config.threshold);
   if (before) {
@@ -145,7 +164,7 @@ export async function prepareAnswer(rawQuestion: string, deps: PrepareDeps, conf
     const r = await rerankChunks(
       question,
       chunks,
-      { model: config.answerModel, topN: config.k, maxTokensPerCandidate: 300, reasoning: "low", maxOutputTokens: 1000 },
+      { model: config.answerModel, topN: config.k, maxTokensPerCandidate: 300, reasoning: "low", maxOutputTokens: 1000, cacheMode: config.cacheMode },
       { rerank: deps.rerank!, sink: deps.sink },
     );
     ordered = r.chunks;
@@ -158,8 +177,8 @@ export async function prepareAnswer(rawQuestion: string, deps: PrepareDeps, conf
 
 /** The model's finished text → an answer with checked citations, or the model's own refusal. */
 export function finishAnswer(ready: Ready, generation: { text: string; finishReason: string }): AnswerResult {
-  const { question, config, retrieved, topVectorSimilarity, rerankStatus, topVector, latency } = ready;
-  const done = { question, config, retrieved, topVectorSimilarity, rerankStatus };
+  const { question, config, retrieved, topVectorSimilarity, rerankStatus, topVector, latency, pool } = ready;
+  const done = { question, config, retrieved, topVectorSimilarity, rerankStatus, pool };
   if (isModelRefusal(generation.text)) {
     return { ...done, kind: "refusal", reason: "not_in_sources", closest: closestSection(topVector ?? done.retrieved[0]), latencyMs: latency() };
   }
@@ -186,6 +205,7 @@ export async function answerQuestion(rawQuestion: string, deps: AnswerDeps, conf
         prompt: ready.prompt,
         reasoning: config.reasoning,
         maxOutputTokens: config.maxOutputTokens,
+        cacheMode: config.cacheMode,
       }),
     fromText,
   );

@@ -23,11 +23,20 @@
     "eval:threshold": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/eval-threshold.ts",
     "eval:generation": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/eval-generation.ts",
     "eval:label": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/eval-label.ts",
-    "eval:judge": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/eval-judge.ts"
+    "eval:judge": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/eval-judge.ts",
+    "eval:cache": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/eval-cache.ts",
+    "eval:baseline": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/eval-baseline.ts",
+    "eval:gate": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/eval-gate.ts",
+    "eval:smoke": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/eval-smoke.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "4.0.107",
+    "@ai-sdk/otel": "1.0.161",
     "@ai-sdk/react": "4.0.165",
+    "@langfuse/otel": "6.1.1",
+    "@langfuse/vercel-ai-sdk": "6.1.1",
+    "@opentelemetry/api": "1.9.1",
+    "@opentelemetry/sdk-trace-node": "2.12.0",
     "@supabase/supabase-js": "2.118.0",
     "ai": "7.0.161",
     "github-slugger": "2.0.0",

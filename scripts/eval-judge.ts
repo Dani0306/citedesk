@@ -4,11 +4,9 @@
 // plus an eval_runs row. About $0.009 an output on sol, $0.0005 on luna.
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { combineSinks, dbSink, jsonlSink } from "../lib/calls/sinks";
-import { db } from "../lib/db/client";
 import { openaiJudge, runJudge } from "../evals/judge";
 import { GenerationRun, GROUNDEDNESS_LABELS, GroundednessLabelFile } from "../evals/schema";
-import { arg, gitSha, insertEvalRun, main, maxUsdArg, runFile, RUNS_DIR } from "./eval-shared";
+import { arg, gitSha, insertEvalRun, main, maxUsdArg, runFile, RUNS_DIR, scriptSink } from "./eval-shared";
 
 main(async () => {
   const model = arg("model");
@@ -25,7 +23,7 @@ main(async () => {
     labels,
     rubric,
     model,
-    { judge: openaiJudge, sink: combineSinks(jsonlSink(), dbSink(db())) },
+    { judge: openaiJudge, sink: scriptSink() },
     { maxUsd, gitSha: gitSha(), note: arg("note") ?? null, date, onAnswer: (d, t) => process.stdout.write(`\r${d}/${t}`) },
   );
   const file = runFile("judge", model, date);
@@ -50,5 +48,5 @@ main(async () => {
     console.log(`\nDisagreements (edit the rubric, never the labels):`);
     for (const s of disagreements) console.log(`  ${s.questionId}#${s.index}  human ${s.human}, judge ${s.judge}: ${s.reason}`);
   }
-  console.log(`\nWrote ${path.relative(process.cwd(), file)} · eval_runs ${id}`);
+  console.log(`\nWrote ${path.relative(process.cwd(), file)} · eval_runs ${id ?? "not written"}`);
 });
