@@ -10,6 +10,7 @@ import { persistQuery, supabaseInsertQueryLog } from "../lib/db/query-log";
 import { openaiEmbed } from "../lib/ingest/embed";
 import { supabaseKeyword } from "../lib/retrieve/keyword";
 import { openaiRerank } from "../lib/retrieve/rerank";
+import { startTracing, traced } from "../lib/telemetry";
 import { supabaseMatch } from "../lib/retrieve/vector";
 
 function print(result: AnswerResult, queryId: number | null, costUsd: number) {
@@ -55,14 +56,14 @@ async function main() {
   let result: AnswerResult | null = null;
   let queryId: number | null = null;
   try {
-    result = await answerQuestion(question, {
+    result = await traced("citedesk.ask", { retrieval, rerank: config.rerank }, () => answerQuestion(question, {
       embed: openaiEmbed,
       match: supabaseMatch(db()),
       keyword: supabaseKeyword(db()),
       rerank: openaiRerank,
       generate: openaiGenerate,
       sink: buffer.sink,
-    }, config);
+    }, config));
   } finally {
     queryId = await persistQuery(
       { insertQueryLog: supabaseInsertQueryLog(db()), sink: combineSinks(jsonlSink(), dbSink(db())) },
@@ -73,7 +74,11 @@ async function main() {
   print(result, queryId, buffer.records.reduce((total, r) => total + r.costUsd, 0));
 }
 
-main().catch((e) => {
-  console.error(e instanceof Error ? e.message : e);
-  process.exit(1);
-});
+const tracing = startTracing();
+main()
+  .then(() => tracing.flush())
+  .catch(async (e) => {
+    console.error(e instanceof Error ? e.message : e);
+    await tracing.flush().catch(() => {});
+    process.exit(1);
+  });

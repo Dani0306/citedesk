@@ -1,4 +1,4 @@
-// npm run eval:generation [-- --config=vector|hybrid|hybrid-rerank] [--max-usd=…] [--note="…"]
+// npm run eval:generation [-- --config=vector|hybrid|hybrid-rerank] [--cache=implicit|off] [--max-usd=…] [--note="…"]
 // Answers every question through answerQuestion (T34) and records, per question, what each stage
 // did. Writes evals/runs/YYYY-MM-DD-generation-<config>.json plus an eval_runs row. About $0.0005
 // a question on vector; prints a worst-case estimate first and stops at the cap.
@@ -17,7 +17,9 @@ const pct = (x: number | null) => (x === null ? "n/a" : `${(x * 100).toFixed(0)}
 
 main(async () => {
   const name = arg("config") ?? "vector";
-  const config = generationConfig(name);
+  const cache = arg("cache") ?? "implicit";
+  if (cache !== "implicit" && cache !== "off") throw new Error("--cache must be implicit or off");
+  const config = { ...generationConfig(name), cacheMode: cache } as const;
   const maxUsd = maxUsdArg(GENERATION_CONFIGS[name].defaultMaxUsd);
   const set = await checkedQuestions();
 

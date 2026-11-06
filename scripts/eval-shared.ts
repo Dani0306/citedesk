@@ -7,6 +7,7 @@ import { z } from "zod";
 import { combineSinks, dbSink, jsonlSink } from "../lib/calls/sinks";
 import { db } from "../lib/db/client";
 import { unwrap } from "../lib/db/result";
+import { startTracing } from "../lib/telemetry";
 import { loadQuestions, QUESTIONS_FILE, validateQuestions } from "../evals/inputs";
 
 export const arg = (name: string) => process.argv.slice(2).find((a) => a.startsWith(`--${name}=`))?.split("=").slice(1).join("=");
@@ -56,9 +57,14 @@ export function scriptSink() {
   return process.env.CITEDESK_LOG_DB === "0" ? jsonlSink() : combineSinks(jsonlSink(), dbSink(db()));
 }
 
+/** Runs a script with tracing on (when configured) and its spans flushed before exit. */
 export function main(run: () => Promise<void>) {
-  run().catch((e) => {
-    console.error(e instanceof Error ? e.message : e);
-    process.exit(1);
-  });
+  const tracing = startTracing();
+  run()
+    .then(() => tracing.flush())
+    .catch(async (e) => {
+      console.error(e instanceof Error ? e.message : e);
+      await tracing.flush().catch(() => {});
+      process.exit(1);
+    });
 }
