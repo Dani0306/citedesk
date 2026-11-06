@@ -1,6 +1,6 @@
 # 005 — Phase 3: vector-only answers (T13–T17)
 
-**Status:** draft
+**Status:** done
 **Branch:** `feat/vector-answers` (from `main` after PR #3)
 **Week:** 2 (build guide Phase 3; minimum scope 4 and 6, server side)
 
@@ -182,4 +182,21 @@ Every question writes one `query_log` row, and its model calls point at that row
 
 ## Results
 
-Filled in after the work.
+- **Probes (threshold):** in-scope rank-1 0.684, 0.684, 0.664, 0.721 (plus pg_cron at 0.725, which turned out to hit a stub page); out-of-corpus TOTP MFA 0.481, custom SMTP 0.341, Storage upload size 0.501, Edge Function cold starts 0.364, MongoDB index 0.470; "capital of France" 0.130. Provisional threshold **0.60**.
+- **Live `npm run ask` (query_log 1–6):**
+
+  | # | Question | Outcome | Cited | Invalid | Cost | Latency |
+  |---|---|---|---|---|---|---|
+  | 1 | partial index | answer | [1] | 0 | $0.00042871 | 3,926 ms |
+  | 2 | TOTP MFA | refused, low_score (0.481) | — | — | $0.00000030 | 1,107 ms |
+  | 3 | capital of France | refused, low_score (0.130) | — | — | $0.00000014 | 1,634 ms |
+  | 4 | enable RLS | answer | [1] | 0 | $0.00030440 | 3,327 ms |
+  | 5 | HNSW vs IVFFlat | answer | [2][3][6] | 0 | $0.00023260 | 2,815 ms |
+  | 6 | pg_cron every 5 min | answer (0.602, just over) | [7] | 0 | $0.00031660 | 2,897 ms |
+
+  Every answer row links its `embed_query` and `answer` calls through `query_id`; refusals have only the embedding call.
+- **Surprise 1, cache writes:** `raw_usage.input_tokens_details.cache_write_tokens` was ~the whole prompt on every answer (3,194 of 3,197 in #1), billed at 1.25×, with 0 cached reads. That's about +23% per answer for a cache that can't hit. The cost maths matches exactly, which confirms cache writes sit inside `input_tokens`. Left as is for T38, as an owner decision.
+- **Surprise 2, stub page:** `database/extensions/pg_cron` is one line pointing at `guides/cron` (not in the subset). #6 passed the gate and the model wrote `*/5 * * * *` from memory, citing pg_net's Configuration section. The marker is valid, but the claim is unsupported. That's the retrieval-miss-with-confident-answer case the groundedness judge and diagnosis table exist for.
+- **The validator caught rule-3 slips:** #4's sentence introducing the code had no marker (uncited 1). A bug was found on the first live answer: under the `m` flag, `$` ended the fenced-code match at the first line, so code lines counted as prose. It's fixed and tested; row 1 still stores the pre-fix count of 2.
+- `reasoning: "low"` gave 0 reasoning tokens on all four answers.
+- Spend: ≈ $0.0013.

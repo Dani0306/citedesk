@@ -7,8 +7,9 @@ import type { RetrievedChunk } from "../retrieve/vector";
 
 /**
  * PROVISIONAL until T33 sweeps it against the 10 unanswerable questions. Measured 5 Nov 2026 from
- * 10 probes (prompt 005): in-scope rank-1 scores 0.664–0.725, out-of-corpus topics 0.341–0.501.
- * Set just below the lowest in-scope score.
+ * 10 probes (prompt 005): in-scope rank-1 scores 0.664–0.721, out-of-corpus topics 0.341–0.501.
+ * Set just below the lowest in-scope score. Known leak: database/extensions/pg_cron is a one-line
+ * stub pointing at guides/cron (not ingested), and pg_cron questions score ~0.60–0.73 on it.
  */
 export const PROVISIONAL_REFUSAL_THRESHOLD = 0.6;
 

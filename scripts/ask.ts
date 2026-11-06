@@ -33,7 +33,7 @@ function print(result: AnswerResult, queryId: number | null, costUsd: number) {
   }
   console.log(
     `\ntop ${result.retrieved[0]?.similarity.toFixed(3) ?? "—"} vs threshold ${config.threshold} (${config.thresholdSource})` +
-      ` · ${config.answerModel}, reasoning ${config.reasoning} · $${costUsd.toFixed(6)} · ${result.latencyMs} ms · query_log ${queryId}`,
+      ` · ${config.answerModel}, reasoning ${config.reasoning} · $${costUsd.toFixed(8)} ·${result.latencyMs} ms · query_log ${queryId}`,
   );
 }
 
