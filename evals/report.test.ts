@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { formatUsd } from "@/lib/evidence";
-import { buildSummary, END, renderAblation, replaceBlock, START } from "@/evals/report";
+import { buildSummary, END, renderAblation, renderDiagnosis, replaceBlock, selectGeneration, START, withGeneration } from "@/evals/report";
 import type { RetrievalRun } from "@/evals/schema";
 
 const HASH = "a".repeat(64);
@@ -84,5 +84,78 @@ describe("replaceBlock and formatUsd", () => {
     expect(formatUsd(0.00154121)).toBe("$0.0015");
     expect(formatUsd(0.12)).toBe("$0.12");
     expect(formatUsd(0)).toBe("$0");
+  });
+});
+
+describe("generation and judge evidence", () => {
+  const gen = (file: string, answerableCount: number, unanswerableCount: number, createdAt = "2026-11-08T10:00:00.000Z") => ({
+    file,
+    run: {
+      kind: "generation" as const,
+      createdAt,
+      gitSha: "abc",
+      note: null,
+      config: { name: "hybrid" },
+      models: { embedding: "text-embedding-3-small", answer: "gpt-6-luna", rerank: null },
+      pricesReadOn: "2026-11-05",
+      questionsHash: HASH,
+      answerableCount,
+      unanswerableCount,
+      costUsd: 0.02,
+      metrics: {
+        hallucinatedCitations: 0,
+        citationPrecision: 0.82,
+        correctRefusalRate: 0.9,
+        falseRefusalRate: 0.05,
+        answered: 39,
+        costPerQuestionUsd: 0.0004,
+        tokensPerAnswer: 3000,
+        latencyMs: { p50: 2000, p95: 4000 },
+      },
+      perQuestion: [],
+    },
+  });
+  const judge = (generationRun: string, outputsJudged: number) => ({
+    file: "j.json",
+    run: {
+      kind: "judge" as const,
+      createdAt: "2026-11-08T11:00:00.000Z",
+      gitSha: "abc",
+      note: null,
+      model: "gpt-6.1-sol",
+      generationRun,
+      rubricHash: "b".repeat(64),
+      pricesReadOn: "2026-11-05",
+      costUsd: 0.27,
+      outputsJudged,
+      invalidOutputs: 0,
+      staleLabels: 0,
+      agreement: { sentences: 120, agreement: 0.875, kappa: 0.71, matrix: { supported: { supported: 0, unsupported: 0, no_claim: 0 }, unsupported: { supported: 0, unsupported: 0, no_claim: 0 }, no_claim: { supported: 0, unsupported: 0, no_claim: 0 } } },
+      sentences: [],
+    },
+  });
+
+  it("uses only a full-set generation run and a judge run of 30 outputs on that same run", () => {
+    expect(selectGeneration([gen("small.json", 3, 2)], [], HASH).gen).toBeNull();
+    const picked = selectGeneration([gen("g.json", 40, 10)], [judge("g.json", 30), { ...judge("other.json", 30), file: "x.json" }], HASH);
+    expect(picked.gen?.file).toBe("g.json");
+    expect(picked.judge?.file).toBe("j.json");
+    expect(selectGeneration([gen("g.json", 40, 10)], [judge("g.json", 12)], HASH).judge).toBeNull();
+  });
+
+  it("fills the summary and the diagnosis block from the picked runs", () => {
+    const picked = selectGeneration([gen("g.json", 40, 10)], [judge("g.json", 30)], HASH);
+    const s = withGeneration(buildSummary([], HASH, 40), picked);
+    expect(s.generation).toMatchObject({ hallucinatedCitations: 0, correctRefusalRate: 0.9, runFile: "g.json" });
+    expect(s.judge).toMatchObject({ model: "gpt-6.1-sol", agreement: 0.875, kappa: 0.71 });
+    const block = renderDiagnosis(picked, 40, 10);
+    expect(block).toContain("Hallucinated citations (a marker pointing at no retrieved source, checked in code): **0** (target 0)");
+    expect(block).toContain("88% agreement with 120 hand-labelled sentences, Cohen's κ 0.71.");
+    expect(block).toContain("| Retrieved the labelled section | 0 · OK | 0 · Generation problem |");
+  });
+
+  it("says what is missing while pending", () => {
+    expect(renderDiagnosis({ gen: null, judge: null }, 3, 0)).toContain("needs a generation run on 40 answerable and 10 unanswerable questions (the set has 3 and 0)");
+    expect(renderDiagnosis(selectGeneration([gen("g.json", 40, 10)], [], HASH), 40, 10)).toContain("**Groundedness pending:**");
   });
 });

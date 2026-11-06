@@ -22,6 +22,29 @@ export const EvidenceRow = z.object({
 });
 export type EvidenceRow = z.infer<typeof EvidenceRow>;
 
+/** Generation evidence needs the 10 unanswerable questions too; judge evidence needs the 30 labelled outputs. */
+export const MIN_UNANSWERABLE = 10;
+export const MIN_JUDGED_OUTPUTS = 30;
+
+export const GenerationEvidence = z.object({
+  config: z.string().min(1),
+  hallucinatedCitations: z.number().int().nonnegative(),
+  citationPrecision: points.nullable(),
+  correctRefusalRate: points.nullable(),
+  falseRefusalRate: points.nullable(),
+  runFile: z.string().min(1),
+  runDate: z.iso.date(),
+});
+
+export const JudgeEvidence = z.object({
+  model: z.string().min(1),
+  agreement: points.nullable(),
+  kappa: z.number().nullable(),
+  sentences: z.number().int().nonnegative(),
+  runFile: z.string().min(1),
+  runDate: z.iso.date(),
+});
+
 export const EvidenceSummary = z.object({
   questionsHash: z.string().length(64),
   /** Answerable questions in the current set. */
@@ -29,6 +52,8 @@ export const EvidenceSummary = z.object({
   minQuestions: z.number().int().positive(),
   /** Empty until a run on the full current set exists. */
   rows: z.array(EvidenceRow),
+  generation: GenerationEvidence.nullable().default(null),
+  judge: JudgeEvidence.nullable().default(null),
 });
 export type EvidenceSummary = z.infer<typeof EvidenceSummary>;
 
@@ -46,4 +71,5 @@ export function formatUsd(x: number): string {
 }
 
 export const formatPoints = (x: number) => (x * 100).toFixed(1);
+export const formatPercent = (x: number) => `${Math.round(x * 100)}%`;
 export const formatMs = (ms: number) => `${ms.toLocaleString("en-US")} ms`;

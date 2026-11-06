@@ -26,7 +26,7 @@ export function loadEvidence(dir: string = EVALS_DIR): Evidence {
     return { status: "pending", questionCount: 0, minQuestions: 40 };
   }
   const summary = EvidenceSummary.parse(JSON.parse(fs.readFileSync(/*turbopackIgnore: true*/ summaryFile, "utf8")));
-  return summary.rows.length === 0
+  return summary.rows.length === 0 && !summary.generation && !summary.judge
     ? { status: "pending", questionCount: summary.questionCount, minQuestions: summary.minQuestions }
     : { status: "measured", summary };
 }

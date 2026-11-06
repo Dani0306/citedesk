@@ -3,36 +3,47 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { loadQuestions } from "../evals/inputs";
-import { buildSummary, renderAblation, renderSummaryJson, replaceBlock } from "../evals/report";
-import { questionsHash, RetrievalRun } from "../evals/schema";
+import { buildSummary, DIAGNOSIS_END, DIAGNOSIS_START, renderAblation, renderDiagnosis, renderSummaryJson, replaceBlock, selectGeneration, withGeneration } from "../evals/report";
+import { GenerationRun, JudgeRun, questionsHash, RetrievalRun } from "../evals/schema";
 
 const root = process.cwd();
 const RUNS = path.join(root, "evals", "runs");
 const README = path.join(root, "README.md");
 const SUMMARY = path.join(root, "evals", "evidence.json");
 
-function loadRuns(): { file: string; run: RetrievalRun }[] {
-  if (!existsSync(RUNS)) return [];
-  return readdirSync(RUNS)
-    .filter((f) => f.endsWith(".json") && !f.startsWith("ci-"))
-    .sort()
-    .flatMap((file) => {
-      const json = JSON.parse(readFileSync(path.join(RUNS, file), "utf8"));
-      if (json.kind !== "retrieval") return []; // generation and judge runs get their own tables later
-      const parsed = RetrievalRun.safeParse(json);
-      if (!parsed.success) throw new Error(`${file} is not a valid retrieval run: ${parsed.error.message}`);
-      return [{ file, run: parsed.data }];
-    });
+const SCHEMAS = { retrieval: RetrievalRun, generation: GenerationRun, judge: JudgeRun } as const;
+
+/** Every run file, validated against the schema its `kind` names; threshold sweeps aren't reported here. */
+function loadRuns() {
+  const out = { retrieval: [] as { file: string; run: RetrievalRun }[], generation: [] as { file: string; run: GenerationRun }[], judge: [] as { file: string; run: JudgeRun }[] };
+  if (!existsSync(RUNS)) return out;
+  for (const file of readdirSync(RUNS).filter((f) => f.endsWith(".json") && !f.startsWith("ci-")).sort()) {
+    const json = JSON.parse(readFileSync(path.join(RUNS, file), "utf8"));
+    const kind = json.kind as keyof typeof SCHEMAS;
+    if (!(kind in SCHEMAS)) continue;
+    const parsed = SCHEMAS[kind].safeParse(json);
+    if (!parsed.success) throw new Error(`${file} is not a valid ${kind} run: ${parsed.error.message}`);
+    (out[kind] as { file: string; run: unknown }[]).push({ file, run: parsed.data });
+  }
+  return out;
 }
 
 function main() {
   const check = process.argv.includes("--check");
   const set = loadQuestions();
   const runs = loadRuns();
-  const summary = buildSummary(runs, questionsHash(set), set.questions.filter((q) => q.answerable).length);
+  const hash = questionsHash(set);
+  const answerable = set.questions.filter((q) => q.answerable).length;
+  const picked = selectGeneration(runs.generation, runs.judge, hash);
+  const summary = withGeneration(buildSummary(runs.retrieval, hash, answerable), picked);
 
   const readme = readFileSync(README, "utf8");
-  const nextReadme = replaceBlock(readme, renderAblation(summary));
+  const nextReadme = replaceBlock(
+    replaceBlock(readme, renderAblation(summary)),
+    renderDiagnosis(picked, answerable, set.questions.length - answerable),
+    DIAGNOSIS_START,
+    DIAGNOSIS_END,
+  );
   const nextSummary = renderSummaryJson(summary);
   const currentSummary = existsSync(SUMMARY) ? readFileSync(SUMMARY, "utf8") : "";
 
@@ -48,7 +59,11 @@ function main() {
 
   writeFileSync(README, nextReadme);
   writeFileSync(SUMMARY, nextSummary);
-  console.log(`${runs.length} retrieval run file(s) read; ${summary.rows.length} reported (set ${summary.questionsHash.slice(0, 12)}, ${summary.questionCount} answerable).`);
+  console.log(
+    `Read ${runs.retrieval.length} retrieval, ${runs.generation.length} generation and ${runs.judge.length} judge run(s); ` +
+      `reported ${summary.rows.length} ablation row(s), generation ${picked.gen ? "yes" : "pending"}, judge ${picked.judge ? "yes" : "pending"} ` +
+      `(set ${summary.questionsHash.slice(0, 12)}, ${summary.questionCount} answerable).`,
+  );
 }
 
 try {

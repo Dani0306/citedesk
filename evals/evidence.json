@@ -2,5 +2,7 @@
   "questionsHash": "2fe4f40f364ab05a03288af4e957ad262cf15d713d54e671348a0b1da2386e32",
   "questionCount": 3,
   "minQuestions": 40,
-  "rows": []
+  "rows": [],
+  "generation": null,
+  "judge": null
 }

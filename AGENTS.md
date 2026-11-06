@@ -181,6 +181,7 @@ Evals are separate scripts (`npm run eval:*`), never part of `npm test`, because
 - Labels live in `evals/questions.json` and are keyed by `chunk_key` (a live URL with its `#anchor` also works; `evals/labels.ts` normalises both). A label must name a key that exists: `npm run eval:check` rejects unknown keys and names the parent when a sub-section was merged into its parent's chunk. Never label from search results (`eval:keys` lists a page's keys instead); that measures the system against itself. Per-question results record every stage (retrieved the labelled section? cited it? answer grounded?), so a failure is attributed to retrieval or generation, never just "wrong".
 - Each run writes a file to `evals/runs/` with models, config, prices-read date, cost and results. Ablation rows come from run files, never from memory or estimates. `npm run eval:report` renders the README table and `evals/evidence.json` (the only eval numbers the app shows) from them, counting only runs on the full labelled set (`MIN_EVIDENCE_QUESTIONS`, 40); `--check` fails on drift. Runs on a smaller set are plumbing checks: don't commit them.
 - Every runner prints its total cost and takes a spend cap. Do not run an eval in a loop.
+- **Groundedness is judged per sentence** with one splitter (`splitSentences` in `lib/answer/citations.ts`) shared by the uncited count, the human labels and the judge. Labels live in `evals/labels/groundedness.json`, keyed by sentence hash, and are never shown a judge's output. `evals/rubric.md` is the judge's instructions verbatim; its hash is in every judge run. Below 85% agreement, edit the rubric, never the labels. Hallucinated citations (markers pointing at no retrieved source) are counted in code and are a different number from groundedness.
 - In evals, shuffle candidate and evidence order for the reranker and the judge (position bias).
 - `evals/baseline.json` is committed. CI fails if a headline metric drops more than 2 points below it. Change the baseline only on purpose, in its own commit, with the reason.
 
@@ -221,7 +222,7 @@ npm run test:watch
 - `npm run typecheck`, `npm run lint` and `npm test` — always.
 - `npm run build` — when routes, config or server modules change.
 - `npm run dev` and click through — for UI changes.
-- `ingest` and `eval:*` — only when the task is about them or the owner asks; report the cost. In `package.json`: `dev` serves `/demo` and `POST /api/chat`; `ingest`, `search`, `ask`, `eval:check`, `eval:keys` and `eval:report` (free), `eval:retrieval` (configs `vector`, `hybrid`, `hybrid-rerank`). Planned: add each with the task that needs it (`eval:generation`, `eval:judge`, `eval:smoke`, `eval:gate`).
+- `ingest` and `eval:*` — only when the task is about them or the owner asks; report the cost. In `package.json`: `dev` serves `/demo` and `POST /api/chat`; `ingest`, `search`, `ask`; free eval tools `eval:check`, `eval:keys`, `eval:label` (interactive, no model) and `eval:report`; paid runners `eval:retrieval`, `eval:threshold`, `eval:generation` and `eval:judge` (each prints an estimate and takes `--max-usd`; `--questions=` points a plumbing run at a scratch file). Planned: `eval:smoke`, `eval:gate`.
 
 ---
 
