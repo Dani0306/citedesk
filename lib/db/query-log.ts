@@ -12,8 +12,15 @@ export function toQueryLogRow(result: AnswerResult, records: ModelCallRecord[]) 
   return {
     query: result.question,
     config: result.config,
-    retrieved: result.retrieved.map(({ id, chunkKey, similarity, rank }) => ({ id, chunkKey, similarity, rank })),
-    rerank_status: "off" as const,
+    retrieved: result.retrieved.map(({ id, chunkKey, similarity, rank, vectorRank, keywordRank }) => ({
+      id,
+      chunkKey,
+      similarity,
+      rank,
+      vectorRank,
+      keywordRank,
+    })),
+    rerank_status: result.rerankStatus,
     cited_chunk_ids: answered ? result.citations.cited.map((c) => c.chunkId) : [],
     refused: !answered,
     refusal_reason: answered ? null : result.reason,

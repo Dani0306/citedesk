@@ -4,10 +4,10 @@ import { buildRecord, NO_TOKENS, type ModelCallRecord } from "@/lib/calls/record
 import { memorySink } from "@/lib/calls/sinks";
 import { DbError } from "@/lib/db/result";
 import { persistQuery, supabaseInsertQueryLog, toQueryLogRow, type QueryLogRow } from "@/lib/db/query-log";
-import type { RetrievedChunk } from "@/lib/retrieve/vector";
+import type { RankedChunk } from "@/lib/retrieve/rrf";
 
 const config = defaultConfig({});
-const chunk = (id: number, similarity: number, rank: number): RetrievedChunk => ({
+const chunk = (id: number, similarity: number, rank: number): RankedChunk => ({
   id,
   chunkKey: `database/x#s${id}`,
   headingPath: ["X"],
@@ -16,6 +16,8 @@ const chunk = (id: number, similarity: number, rank: number): RetrievedChunk => 
   content: "c",
   similarity,
   rank,
+  vectorRank: rank,
+  keywordRank: null,
 });
 const retrieved = [chunk(11, 0.7, 1), chunk(12, 0.6, 2)];
 
@@ -33,6 +35,8 @@ const answer: AnswerResult = {
   question: "q",
   config,
   retrieved,
+  topVectorSimilarity: 0.7,
+  rerankStatus: "applied",
   latencyMs: 1200,
   answer: "A [1]. B [3].",
   citations: { cited: [{ n: 1, chunkId: 11 }], invalid: [3], uncitedSentences: 0 },
@@ -43,6 +47,8 @@ const refusal: AnswerResult = {
   question: "q",
   config,
   retrieved,
+  topVectorSimilarity: 0.7,
+  rerankStatus: "off",
   latencyMs: 90,
   reason: "low_score",
   closest: null,
@@ -52,7 +58,7 @@ describe("toQueryLogRow", () => {
   it("records retrieval, citations and the summed tokens and cost of the question's calls", () => {
     const row = toQueryLogRow(answer, records);
     expect(row).toMatchObject({
-      rerank_status: "off",
+      rerank_status: "applied",
       cited_chunk_ids: [11],
       refused: false,
       refusal_reason: null,
@@ -63,8 +69,8 @@ describe("toQueryLogRow", () => {
     });
     expect(row.cost_usd).toBeCloseTo(records[0].costUsd + records[1].costUsd, 8);
     expect(row.retrieved).toEqual([
-      { id: 11, chunkKey: "database/x#s11", similarity: 0.7, rank: 1 },
-      { id: 12, chunkKey: "database/x#s12", similarity: 0.6, rank: 2 },
+      { id: 11, chunkKey: "database/x#s11", similarity: 0.7, rank: 1, vectorRank: 1, keywordRank: null },
+      { id: 12, chunkKey: "database/x#s12", similarity: 0.6, rank: 2, vectorRank: 2, keywordRank: null },
     ]);
     expect(row.config).toMatchObject({ retrieval: "vector", k: 8, thresholdSource: "provisional", promptVersion: 1 });
   });

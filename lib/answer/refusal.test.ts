@@ -28,13 +28,13 @@ describe("refusalThreshold", () => {
 
 describe("gate", () => {
   it("refuses below the threshold and answers at or above it", () => {
-    expect(gate([chunk(0.59)], 0.6)).toBe("low_score");
-    expect(gate([chunk(0.6)], 0.6)).toBeNull();
-    expect(gate([chunk(0.684)], 0.6)).toBeNull();
+    expect(gate(0.59, 0.6)).toBe("low_score");
+    expect(gate(0.6, 0.6)).toBeNull();
+    expect(gate(0.684, 0.6)).toBeNull();
   });
 
   it("refuses with no_matches when retrieval returned nothing", () => {
-    expect(gate([], 0.6)).toBe("no_matches");
+    expect(gate(null, 0.6)).toBe("no_matches");
   });
 });
 
