@@ -37,6 +37,15 @@ type InsertClient = {
   };
 };
 
+/**
+ * Holds records in memory. A question's calls are buffered here until its query_log row exists,
+ * then written with query_id set (lib/db/query-log.ts).
+ */
+export function memorySink(): { records: ModelCallRecord[]; sink: CallSink } {
+  const records: ModelCallRecord[] = [];
+  return { records, sink: async (record) => void records.push(ModelCallRecord.parse(record)) };
+}
+
 /** Writes each record to every sink, in order (scripts log to JSONL and the table). */
 export function combineSinks(...sinks: CallSink[]): CallSink {
   return async (record) => {

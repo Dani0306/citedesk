@@ -43,7 +43,7 @@ The pinned Supabase docs subset is fetched, parsed, chunked by heading, embedded
 
 ## Code inspected
 
-- `supabase/migrations/20261105120000_citedesk_schema.sql`:
+- `supabase/migrations/20261105232830_citedesk_schema.sql`:
   - `sources(path unique, source_url, commit_sha, content_hash, chunking_hash)`;
   - `chunks(source_id, ordinal, chunk_key, heading_path text[], anchor, source_url, content, token_count, embedding vector(1536) not null)`;
   - no HNSW index yet.
@@ -87,7 +87,7 @@ The pinned Supabase docs subset is fetched, parsed, chunked by heading, embedded
   - Plain `npm run ingest` is a dry run: files to redo, chunks, tokens, estimated cost.
   - `--yes` spends, and aborts above `--max-usd`, default `0.10`.
   - **Estimated cost of the first full run: ~$0.01** (~300–500k tokens at $0.02 per 1M). The real cost comes from the usage the API reports and is printed at the end.
-- **T11 (🎓), new migration `20261106120000_match_documents.sql`:**
+- **T11 (🎓), new migration `20261106022600_match_documents.sql`:**
   - The HNSW index: `create index … using hnsw (embedding extensions.vector_cosine_ops)`, with the default `m` 16 and `ef_construction` 64.
   - The function: `citedesk.match_documents(query_embedding vector(1536), match_count int default 10)`.
     - It's PL/pgSQL with `security invoker` and `set search_path = ''`, so every name is schema-qualified, including `operator(extensions.<=>)`.
@@ -117,7 +117,7 @@ The pinned Supabase docs subset is fetched, parsed, chunked by heading, embedded
 - `lib/ingest/embed.ts` + `embed.test.ts` — create — batched `embedMany` through `recordCall`, with an injected embed function in tests.
 - `lib/ingest/plan.ts` + `plan.test.ts` — create — compares corpus hashes with stored `sources` and produces the plan (redo, skip, delete) plus the cost estimate.
 - `scripts/corpus-fetch.ts`, `scripts/corpus-check-anchors.ts`, `scripts/ingest.ts`, `scripts/search.ts` — create.
-- `supabase/migrations/20261106120000_match_documents.sql` — create.
+- `supabase/migrations/20261106022600_match_documents.sql` — create.
 - `CLAUDE.md` — edit — tick T07–T11 (T12 is the owner's), the project log, and the note that the schema exposure is done.
 - `AGENTS.md` — edit — §12: replace the `ef_search` VERIFY with the measured result.
 
