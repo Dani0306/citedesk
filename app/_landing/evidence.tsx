@@ -1,4 +1,4 @@
-import { CONFIG_LABELS, formatMs, formatPoints, formatUsd, type EvidenceRow } from "@/lib/evidence";
+import { CONFIG_LABELS, formatMs, formatPercent, formatPoints, formatUsd, type EvidenceRow, type EvidenceSummary } from "@/lib/evidence";
 import { loadEvidence } from "./evidence-data";
 import { Section, stagger } from "./ui";
 
@@ -14,16 +14,18 @@ const COLUMNS: { label: string; value: (r: EvidenceRow) => string }[] = [
   { label: "p95 latency", value: (r) => formatMs(r.p95LatencyMs) },
 ];
 
-const TARGETS = [
+const TARGETS: { label: string; target: string; note: string; value: (s: EvidenceSummary) => string | null }[] = [
   {
     label: "Hallucinated citations",
     target: "Target: 0",
     note: "A marker that points at a passage not retrieved for that question. Checked in code on every answer.",
+    value: (s) => (s.generation ? String(s.generation.hallucinatedCitations) : null),
   },
   {
     label: "Judge agreement",
     target: "Target: ≥ 85%",
-    note: "The groundedness judge against 30 hand-labelled answers, with Cohen’s kappa alongside. Planned for week 4.",
+    note: "The groundedness judge against 30 hand-labelled answers, with Cohen’s kappa alongside.",
+    value: (s) => (s.judge?.agreement != null ? formatPercent(s.judge.agreement) : null),
   },
 ];
 
@@ -100,17 +102,28 @@ export function Evidence() {
           </div>
 
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            {TARGETS.map((t, i) => (
-              <div key={t.label} style={stagger(i)} className="reveal rounded-2xl border border-line bg-card p-6">
-                <p className="text-sm font-medium text-ink-2">{t.label}</p>
-                <p className="mt-2 font-mono text-4xl font-medium tracking-[-0.02em] text-ink-2">
-                  <span aria-hidden>—</span>
-                  <span className="sr-only">Not measured yet</span>
-                </p>
-                <p className="mt-2 text-sm font-medium">{t.target}</p>
-                <p className="mt-2 text-sm text-pretty text-ink-2">{t.note}</p>
-              </div>
-            ))}
+            {TARGETS.map((t, i) => {
+              const value = evidence.status === "measured" ? t.value(evidence.summary) : null;
+              const kappa = t.label === "Judge agreement" && evidence.status === "measured" ? evidence.summary.judge?.kappa : null;
+              return (
+                <div key={t.label} style={stagger(i)} className="reveal rounded-2xl border border-line bg-card p-6">
+                  <p className="text-sm font-medium text-ink-2">{t.label}</p>
+                  <p className={`mt-2 font-mono text-4xl font-medium tracking-[-0.02em] ${value ? "text-ink" : "text-ink-2"}`}>
+                    {value ?? (
+                      <>
+                        <span aria-hidden>—</span>
+                        <span className="sr-only">Not measured yet</span>
+                      </>
+                    )}
+                  </p>
+                  <p className="mt-2 text-sm font-medium">
+                    {t.target}
+                    {kappa != null ? ` · Cohen’s κ ${kappa.toFixed(2)}` : ""}
+                  </p>
+                  <p className="mt-2 text-sm text-pretty text-ink-2">{t.note}</p>
+                </div>
+              );
+            })}
           </div>
 
           <p className="mt-6 max-w-2xl text-sm text-pretty text-ink-2">
