@@ -48,6 +48,7 @@ describe("groupSections", () => {
     expect(groups).toHaveLength(1);
     expect(groups[0].head.anchor).toBe("A");
     expect(groups[0].body).toBe("a a\n\n### B\n\nb b\n\n#### C\n\nc c");
+    expect(groups[0].anchors).toEqual(["A", "A-B", "A-B-C"]);
   });
 
   it("never absorbs a sibling or the next higher section", () => {
