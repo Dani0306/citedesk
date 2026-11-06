@@ -178,7 +178,7 @@ Ingest is offline tooling run with `npm run ingest`: loader → chunker → embe
 Evals are separate scripts (`npm run eval:*`), never part of `npm test`, because they cost money. Metrics, targets and the CI policy are in `CLAUDE.md`.
 
 - **Scoring and normalisation live in one tested place** (`evals/`). A formatting mismatch is a scorer bug, not a model error; fix the scorer, never the data to fit it.
-- Labels are keyed by `chunk_key`. Per-question results record every stage (retrieved the labelled section? cited it? answer grounded?), so a failure is attributed to retrieval or generation, never just "wrong".
+- Labels live in `evals/questions.json` and are keyed by `chunk_key` (a live URL with its `#anchor` also works; `evals/labels.ts` normalises both). A label must name a key that exists: `npm run eval:check` rejects unknown keys and names the parent when a sub-section was merged into its parent's chunk. Never label from search results (`eval:keys` lists a page's keys instead); that measures the system against itself. Per-question results record every stage (retrieved the labelled section? cited it? answer grounded?), so a failure is attributed to retrieval or generation, never just "wrong".
 - Each run writes a file to `evals/runs/` with models, config, prices-read date, cost and results. Ablation rows come from run files, never from memory or estimates.
 - Every runner prints its total cost and takes a spend cap. Do not run an eval in a loop.
 - In evals, shuffle candidate and evidence order for the reranker and the judge (position bias).
@@ -218,7 +218,7 @@ npm run test:watch
 - `npm run typecheck`, `npm run lint` and `npm test` — always.
 - `npm run build` — when routes, config or server modules change.
 - `npm run dev` and click through — for UI changes.
-- `ingest` and `eval:*` — only when the task is about them or the owner asks; report the cost. Planned, not in `package.json` yet: add each with the task that needs it (`ingest`, `eval:retrieval`, `eval:generation`, `eval:judge`, `eval:smoke`, `eval:report`, `eval:gate`).
+- `ingest` and `eval:*` — only when the task is about them or the owner asks; report the cost. In `package.json`: `ingest`, `search`, `ask`, `eval:check` and `eval:keys` (free), `eval:retrieval`. Planned: add each with the task that needs it (`eval:generation`, `eval:judge`, `eval:smoke`, `eval:report`, `eval:gate`).
 
 ---
 

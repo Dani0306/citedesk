@@ -1,6 +1,6 @@
 # 006 — Phase 4: retrieval eval baseline (T18–T22)
 
-**Status:** draft
+**Status:** done (T18, T19, T21, T20 tooling); T20's labels are the owner's, then T22
 **Branch:** `feat/retrieval-eval` (from `main` after PR #4)
 **Week:** 2 (build guide Phase 4)
 
@@ -151,4 +151,14 @@ T20 (writing and labelling the 40 questions) is your hand work. I build the tool
 
 ## Results
 
-Filled in after the work.
+- **T20 decision (owner, 6 Nov):** the owner writes all 40 questions by hand, with no AI-drafted questions, so the README can say the set is hand-written.
+- **`eval:check`:** passes on the 3 worked examples. It fails with every problem listed for:
+  - an unknown key, with the `eval:keys` hint;
+  - a duplicate label;
+  - a merged sub-section. For example, `indexes#understanding-index-advisor-results` gets "label `database/postgres/indexes#index-advisor` instead".
+- **Plumbing run** (`eval:retrieval --config=vector`, 3 worked examples):
+  - recall@5 66.7, recall@8 66.7, recall@20 66.7, MRR 50.0, nDCG@10 55.0;
+  - cost **$0.00000122, exactly the estimate**; p50 1,355 ms, p95 1,909 ms;
+  - written to `eval_runs` 1 with the note "plumbing check". The run file was deleted rather than committed, because it isn't a baseline.
+- **Early signal (one question, not a finding):** r02 ("My embeddings table is empty… which kind of vector index?") never names HNSW or IVFFlat, and **missed all three labelled sections in the top 20**. Rank 1 was `ai/quickstarts/generate-text-embeddings#next-steps`. Full-text search won't help a question with no shared keywords; whether the rerank does is something the T25 measurement will show.
+- **Checks:** 135 tests pass; typecheck, lint and build are clean.
