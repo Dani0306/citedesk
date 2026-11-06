@@ -50,6 +50,18 @@ describe("checkCitations", () => {
     expect(checkCitations(answer, chunks).uncitedSentences).toBe(2);
   });
 
+  // The first live answer (prompt 005): a multi-line code block must not count as prose.
+  it("drops every line of a code block, and an unclosed one runs to the end", () => {
+    const answer =
+      "Use a `WHERE` clause to limit the index to the rows you query. For example, to index the `age` of living persons: [1]\n\n" +
+      "```sql\ncreate index idx_living_persons_age on persons (age)\nwhere deceased is false;\n```";
+    expect(checkCitations(answer, chunks).uncitedSentences).toBe(1);
+    expect(checkCitations("Run this [1]:\n\n```sql\nselect a[4] from t;\nselect b from u where c;", chunks)).toMatchObject({
+      invalid: [],
+      uncitedSentences: 0,
+    });
+  });
+
   it("skips headings, tables and short fragments when counting", () => {
     const answer = "## Steps\n\n| a | b |\n|---|---|\n\nDone.\n\nRun `create index` first [1].";
     expect(checkCitations(answer, chunks).uncitedSentences).toBe(0);

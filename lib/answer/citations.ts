@@ -14,7 +14,8 @@ export type CitationCheck = {
   uncitedSentences: number;
 };
 
-const FENCED = /^ {0,3}(`{3,}|~{3,})[^\n]*\n[\s\S]*?(?:\n {0,3}\1[^\n]*|$)/gm;
+// An unclosed fence runs to the end of the answer ((?![\s\S]), since $ means end of line under m).
+const FENCED = /^ {0,3}(`{3,}|~{3,})[^\n]*\n[\s\S]*?(?:\n {0,3}\1[^\n]*|(?![\s\S]))/gm;
 const INLINE_CODE = /`[^`\n]*`/g;
 const LINK = /!?\[([^\]]*)\]\([^)]*\)/g;
 const MARKER = /\[(\d+(?:\s*,\s*\d+)*)\]/g;
