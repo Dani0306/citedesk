@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkCitations } from "@/lib/answer/citations";
+import { checkCitations, splitSentences } from "@/lib/answer/citations";
 
 const chunks = [{ id: 101 }, { id: 102 }, { id: 103 }];
 
@@ -65,5 +65,27 @@ describe("checkCitations", () => {
   it("skips headings, tables and short fragments when counting", () => {
     const answer = "## Steps\n\n| a | b |\n|---|---|\n\nDone.\n\nRun `create index` first [1].";
     expect(checkCitations(answer, chunks).uncitedSentences).toBe(0);
+  });
+});
+
+describe("splitSentences", () => {
+  it("returns each prose sentence with its markers, wherever the marker sits around the full stop", () => {
+    expect(splitSentences("Partial indexes cover some rows. [1] They use a where clause [1][3]. This part has no source.")).toEqual([
+      { index: 0, text: "Partial indexes cover some rows. [1]", markers: [1] },
+      { index: 1, text: "They use a where clause [1][3].", markers: [1, 3] },
+      { index: 2, text: "This part has no source.", markers: [] },
+    ]);
+  });
+
+  it("drops code blocks, keeps inline code verbatim and never reads markers inside it", () => {
+    const answer = "Run `select a[4] from t` first [2]:\n\n```sql\nselect 1;\n```\n\n- Then add the index [1].";
+    expect(splitSentences(answer)).toEqual([
+      { index: 0, text: "Run `select a[4] from t` first [2]:", markers: [2] },
+      { index: 1, text: "Then add the index [1].", markers: [1] },
+    ]);
+  });
+
+  it("skips headings and fragments, and keeps grouped markers", () => {
+    expect(splitSentences("## Steps\n\nDone.\n\nBoth pages agree on this [1, 2].")).toEqual([{ index: 0, text: "Both pages agree on this [1, 2].", markers: [1, 2] }]);
   });
 });
