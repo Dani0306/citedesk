@@ -31,8 +31,8 @@ Every question writes one `query_log` row, and its model calls point at that row
 
 ## Code inspected
 
-- **`supabase/migrations/20261105120000_citedesk_schema.sql`:** `query_log` has `query`, `config jsonb`, `retrieved jsonb`, `rerank_status ('applied'|'skipped'|'off')`, `cited_chunk_ids bigint[]`, `refused`, input and output tokens, `cost_usd` and `latency_ms`. It has no columns for the answer text, the refusal reason or the hallucinated-citation count.
-- **`supabase/migrations/20261106120000_match_documents.sql`:** `match_documents(query_embedding, match_count)` already sets `hnsw.ef_search = greatest(match_count, 40)` for each call (transaction-local) and returns `id, chunk_key, heading_path, anchor, source_url, content, similarity`. So T13's "per-query `ef_search`" lives in the function, and the TypeScript side only has to query through it.
+- **`supabase/migrations/20261105232830_citedesk_schema.sql`:** `query_log` has `query`, `config jsonb`, `retrieved jsonb`, `rerank_status ('applied'|'skipped'|'off')`, `cited_chunk_ids bigint[]`, `refused`, input and output tokens, `cost_usd` and `latency_ms`. It has no columns for the answer text, the refusal reason or the hallucinated-citation count.
+- **`supabase/migrations/20261106022600_match_documents.sql`:** `match_documents(query_embedding, match_count)` already sets `hnsw.ef_search = greatest(match_count, 40)` for each call (transaction-local) and returns `id, chunk_key, heading_path, anchor, source_url, content, similarity`. So T13's "per-query `ef_search`" lives in the function, and the TypeScript side only has to query through it.
 - **`lib/calls/record.ts`:** `recordCall(sink, { purpose, model, queryId }, run, readUsage)` and `fromText` (reads `cacheReadTokens`, `cacheWriteTokens`, `noCacheTokens` and `reasoningTokens`).
 - **`lib/calls/sinks.ts`:** `jsonlSink`, `dbSink` and `combineSinks`. The sinks write each call immediately, but the `query_log` id doesn't exist until the question is finished.
 - **`lib/ingest/embed.ts`:** `embedAll(texts, { embed, sink, purpose: "embed_query" })` already checks dimensions.
@@ -94,7 +94,7 @@ Every question writes one `query_log` row, and its model calls point at that row
   - If the pipeline throws, for example on an OpenAI error, the caller's `finally` still writes the buffered records with `query_id` null. Every call is logged whatever the outcome, which is the T06 rule.
   - Rejected: inserting a placeholder `query_log` row first and updating it later. It would leave rows that are wrong until they're updated, and an update path to keep in sync.
 - **The `query_log` tokens and cost are sums over that question's model calls** (embedding + answer), taken from the records rather than recomputed.
-- **One additive migration, `20261107120000_query_log_answers.sql`.** `query_log` is empty and nothing is dropped or retyped. It adds:
+- **One additive migration, `20261106030823_query_log_answers.sql`.** `query_log` is empty and nothing is dropped or retyped. It adds:
   - `answer text`, which is null on a refusal;
   - `refusal_reason text`, checked in (`low_score`, `not_in_sources`, `no_matches`), with a constraint that `refused = (refusal_reason is not null)`;
   - `invalid_citations integer not null default 0`;
@@ -120,7 +120,7 @@ Every question writes one `query_log` row, and its model calls point at that row
 - `lib/answer/answer.ts` + test — create — `answerQuestion`, `openaiGenerate`, `AnswerResult`.
 - `lib/calls/sinks.ts` (+ test) — edit — `memorySink()`.
 - `lib/db/query-log.ts` + test — create — `toQueryLogRow`, `persistQuery(client, result, records)`.
-- `supabase/migrations/20261107120000_query_log_answers.sql` — create.
+- `supabase/migrations/20261106030823_query_log_answers.sql` — create.
 - `scripts/ask.ts`, `package.json` (`ask`) — create / edit.
 - `scripts/search.ts` — edit — use `vectorSearch`.
 - `.env.example` — edit — explain the provisional threshold.
@@ -153,16 +153,16 @@ Every question writes one `query_log` row, and its model calls point at that row
 
 ## Acceptance criteria
 
-- [ ] T13: `vectorSearch` works, and `npm run search` keeps its behaviour on top of it.
-- [ ] T14: the static instructions come first, and the sources then the question come after. Tested.
-- [ ] T15: the validator is tested on valid, grouped, out-of-range, code-embedded and link cases.
-- [ ] T16: the provisional threshold is measured from the 10 probes and recorded in `CLAUDE.md` open decision 3. All three refusal reasons are tested, with zero answer calls on `low_score`.
-- [ ] T17: `query_log` and `model_calls` rows are written and linked. A live run shows the `query_id` on the embedding and answer rows.
-- [ ] A live `npm run ask` gives:
+- [x] T13: `vectorSearch` works, and `npm run search` keeps its behaviour on top of it.
+- [x] T14: the static instructions come first, and the sources then the question come after. Tested.
+- [x] T15: the validator is tested on valid, grouped, out-of-range, code-embedded and link cases.
+- [x] T16: the provisional threshold is measured from the 10 probes and recorded in `CLAUDE.md` open decision 3. All three refusal reasons are tested, with zero answer calls on `low_score`.
+- [x] T17: `query_log` and `model_calls` rows are written and linked. A live run shows the `query_id` on the embedding and answer rows.
+- [x] A live `npm run ask` gives:
   - a cited answer for an in-scope question, with `invalid_citations` 0;
   - a `low_score` refusal for an unanswerable topic, with no answer call;
   - the cost and latency, reported.
-- [ ] The migration is applied, and the security advisor shows nothing new beyond the expected INFO.
+- [x] The migration is applied, and the security advisor shows nothing new beyond the expected INFO.
 
 ## Checks
 

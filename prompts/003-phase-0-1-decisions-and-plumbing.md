@@ -104,7 +104,7 @@ No model or embedding calls.
   - tick T01–T06;
   - add a project-log line.
 - `.env.example` — create — variable names only, matching `.env.local`, with comments.
-- `supabase/migrations/20261105120000_citedesk_schema.sql` — create — schema, `vector` extension, six tables, RLS, grants.
+- `supabase/migrations/20261105232830_citedesk_schema.sql` — create — schema, `vector` extension, six tables, RLS, grants.
 - `lib/db/result.ts` + `lib/db/result.test.ts` — create — `unwrap()`, and a typed `DbError` carrying `code`.
 - `lib/db/client.ts` — create — `server-only`, `createClient(SUPABASE_URL, SUPABASE_SECRET_KEY, { db: { schema: "citedesk" }, auth: { persistSession: false } })`, failing fast when either env var is missing.
 - `lib/cost/pricing.ts` + `lib/cost/pricing.test.ts` — create — `PRICES`, `PRICING_READ_ON = "2026-11-05"`, `callCostUsd`, `embeddingCostUsd`, `UnknownModelPriceError`.
