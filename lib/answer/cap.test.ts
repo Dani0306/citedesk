@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { capReached, dailyAnswerCap, DEFAULT_DAILY_ANSWER_CAP, startOfUtcDay } from "@/lib/answer/cap";
+import { capReached, dailyAnswerCap, dailyRerankCap, DEFAULT_DAILY_ANSWER_CAP, DEFAULT_DAILY_RERANK_CAP, startOfUtcDay } from "@/lib/answer/cap";
 
 describe("daily answer cap", () => {
   it("defaults when unset and reads a whole number otherwise", () => {
     expect(dailyAnswerCap({})).toBe(DEFAULT_DAILY_ANSWER_CAP);
     expect(dailyAnswerCap({ CITEDESK_DAILY_ANSWER_CAP: " 50 " })).toBe(50);
     expect(dailyAnswerCap({ CITEDESK_DAILY_ANSWER_CAP: "0" })).toBe(0);
+    expect(dailyRerankCap({})).toBe(DEFAULT_DAILY_RERANK_CAP);
+    expect(dailyRerankCap({ CITEDESK_DAILY_RERANK_CAP: "5" })).toBe(5);
+    expect(() => dailyRerankCap({ CITEDESK_DAILY_RERANK_CAP: "x" })).toThrow(/CITEDESK_DAILY_RERANK_CAP/);
   });
 
   it("rejects nonsense loudly", () => {

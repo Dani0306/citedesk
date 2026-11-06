@@ -81,6 +81,8 @@ type Common = {
   retrieved: RankedChunk[];
   topVectorSimilarity: number | null;
   rerankStatus: "off" | "applied" | "skipped";
+  /** Every candidate before the rerank, in fused (or vector) order: what the playground shows. */
+  pool?: RankedChunk[];
   latencyMs: number;
 };
 
@@ -141,7 +143,7 @@ export async function prepareAnswer(rawQuestion: string, deps: PrepareDeps, conf
   const pool = config.retrieval === "hybrid" || config.rerank ? config.candidates : config.k;
   const { chunks, topVector } = await searchCandidates(question, { mode: config.retrieval, count: pool, rrfK: config.rrfK }, deps);
   const latency = () => Math.round(now() - start);
-  const base = { question, config, topVectorSimilarity: topVector?.similarity ?? null };
+  const base = { question, config, topVectorSimilarity: topVector?.similarity ?? null, pool: chunks };
 
   const before = gate(topVector?.similarity ?? null, config.threshold);
   if (before) {
@@ -175,8 +177,8 @@ export async function prepareAnswer(rawQuestion: string, deps: PrepareDeps, conf
 
 /** The model's finished text → an answer with checked citations, or the model's own refusal. */
 export function finishAnswer(ready: Ready, generation: { text: string; finishReason: string }): AnswerResult {
-  const { question, config, retrieved, topVectorSimilarity, rerankStatus, topVector, latency } = ready;
-  const done = { question, config, retrieved, topVectorSimilarity, rerankStatus };
+  const { question, config, retrieved, topVectorSimilarity, rerankStatus, topVector, latency, pool } = ready;
+  const done = { question, config, retrieved, topVectorSimilarity, rerankStatus, pool };
   if (isModelRefusal(generation.text)) {
     return { ...done, kind: "refusal", reason: "not_in_sources", closest: closestSection(topVector ?? done.retrieved[0]), latencyMs: latency() };
   }
