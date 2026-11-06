@@ -33,7 +33,15 @@ main(async () => {
   console.log(`${file.labels.length} labelled, ${queue.length} to go. Keys: s = supported, u = unsupported, n = no claim, q = quit. Add a note after a space.`);
   console.log("Judge each sentence only against the passages shown under it (evals/rubric.md).\n");
 
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  // Lines are read through the iterator, not rl.question(), so typed-ahead or piped lines are never
+  // dropped; the end of input counts as quitting.
+  const rl = createInterface({ input: process.stdin, terminal: false });
+  const lines = rl[Symbol.asyncIterator]();
+  const ask = async (prompt: string) => {
+    process.stdout.write(prompt);
+    const next = await lines.next();
+    return next.done ? "q" : String(next.value).trim();
+  };
   let lastQuestion = "";
   for (const item of queue) {
     if (item.question.id !== lastQuestion) {
@@ -44,7 +52,7 @@ main(async () => {
     if (item.evidence.length === 0) console.log("   (cites nothing)");
     for (const src of item.evidence) console.log(`\n   [${src.n}] ${src.headingPath.join(" › ")}\n${src.content.replace(/^/gm, "   │ ")}`);
     for (;;) {
-      const reply = (await rl.question("\nLabel (s/u/n, q to quit): ")).trim();
+      const reply = await ask("\nLabel (s/u/n, q to quit): ");
       if (reply === "q") {
         rl.close();
         console.log(`Saved ${file.labels.length} labels.`);
