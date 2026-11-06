@@ -105,13 +105,13 @@ Create folders only when a task needs them. Keep these responsibilities apart:
 - **Ingest and evals** are offline tooling. They never run in the request path, and the app never imports `evals/`.
 - **Zod** is the single source of truth for every boundary (request bodies, model output, eval files). Infer types with `z.infer`; never keep a parallel hand-written type.
 
-**Boundaries that never bend.** The browser never holds a key, never calls a model, and never writes to Postgres; server-only modules import `server-only`. Keep keys in `.env.local` only and keep `.env.example` current; nothing needs a `NEXT_PUBLIC_` variable. Touch only the `citedesk` schema in the shared lab project. **Never ingest Third Way Health content or any real patient or client data**, even redacted. The corpus must be public or content the owner has the right to use; check its licence or permission before ingesting.
+**Boundaries that never bend.** The browser never holds a key, never calls a model, and never writes to Postgres; server-only modules import `server-only`. Keep keys in `.env.local` only and keep `.env.example` current; nothing needs a `NEXT_PUBLIC_` variable. Touch only the `citedesk` schema, in CiteDesk's own Supabase project (`fscvgp…`); never the PaperTrail project. **Never ingest Third Way Health content or any real patient or client data**, even redacted. The corpus must be public or content the owner has the right to use; check its licence or permission before ingesting.
 
 ---
 
 # 6. Tech stack
 
-Next.js App Router, TypeScript strict, Tailwind · Vercel AI SDK (`ai`, `@ai-sdk/react`) · `@ai-sdk/openai` (Responses API) with OpenAI as the only model provider: answers `gpt-6-luna`, escalation `gpt-6.1-sol`, embeddings `text-embedding-3-small` (1536 dims), reranking by an LLM call (no reranker service) · Supabase Postgres + pgvector (HNSW) + `tsvector`, schema `citedesk` in the shared "lab" project · Langfuse Cloud via AI SDK telemetry · Zod · Vitest · `tsx` for scripts · Vercel Hobby. Versions are exact-pinned in `package.json`.
+Next.js App Router, TypeScript strict, Tailwind · Vercel AI SDK (`ai`, `@ai-sdk/react`) · `@ai-sdk/openai` (Responses API) with OpenAI as the only model provider: answers `gpt-6-luna`, escalation `gpt-6.1-sol`, embeddings `text-embedding-3-small` (1536 dims), reranking by an LLM call (no reranker service) · Supabase Postgres + pgvector (HNSW) + `tsvector`, schema `citedesk` in CiteDesk's own Supabase project · Langfuse Cloud via AI SDK telemetry · Zod · Vitest · `tsx` for scripts · Vercel Hobby. Versions are exact-pinned in `package.json`.
 
 Do not use: LangChain, LlamaIndex, a separate vector database, fine-tuning, an auth provider or multi-tenancy (demo mode only), payments, a new language or framework. Python only for an analysis notebook; metrics are computed in TypeScript so CI needs no Python.
 
