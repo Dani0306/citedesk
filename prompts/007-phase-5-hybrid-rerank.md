@@ -1,6 +1,6 @@
 # 007 — Phase 5: hybrid retrieval, rerank, ablation (T23–T27)
 
-**Status:** draft
+**Status:** done (T23, T24, T25, T27); the T24/T25 re-measures and T26 wait on T20
 **Branch:** `feat/hybrid-rerank` (from `main` after PR #5)
 **Week:** 3 (build guide Phase 5)
 
@@ -167,4 +167,29 @@ CiteDesk gains the hybrid half of its retrieval:
 
 ## Results
 
-Filled in after the work.
+- **T23 (live, 6 Nov):**
+  - The migration was applied as `20261106172830`, and `fts` is filled on all 835 chunks.
+  - With `enable_seqscan` off, the planner uses `chunks_fts_idx` (a bitmap index scan).
+  - `keyword_documents` returns 50 rows for r03, where the AND query returned 0, and 0 rows for an all-stopword question. Only `service_role` can execute it, and the advisor shows only the expected six INFO notices.
+  - The keyword arm alone is noisy: r03's keyword top 5 was replication pages, pulled in by the common words "table" and "row". Fusion has to absorb that.
+- **T24:** the hybrid search for r03 has both labelled sections at fused ranks 1–2 (v2/k12 and v1/k16).
+- **T25:** `hybrid --rerank` on "When should I pick HNSW over IVFFlat?":
+  - rerank applied, $0.00148 and 3.4 s;
+  - 11,160 input tokens, almost all written to the cache, plus 164 output (136 of them reasoning);
+  - the whole answer cost $0.0018 and took 8.0 s;
+  - the reranker moved "HNSW vs IVFFlat", ranked 1 by both arms, down to 3rd.
+- **The gate refused an in-scope paraphrase.** For r03 the top vector similarity was 0.447 against the provisional 0.60, so it was refused even though retrieval was right. This is recorded under open decision 3 for T33.
+- **Plumbing runs, 3 questions, not results:**
+
+  | Config | recall@5 | MRR | Cost/query | p95 |
+  |---|---|---|---|---|
+  | vector | 66.7 | 50.0 | $0.00000041 | 1.7 s |
+  | hybrid | 50.0 | 45.8 | $0.00000041 | 1.6 s |
+  | hybrid-rerank | 77.8 | 83.3 | $0.0015 | 4.4 s |
+
+  The rerank estimate was $0.0077 against $0.0046 actual. 0 reranks were skipped. Recorded as `eval_runs` 2–4; the files were deleted.
+- **T27:**
+  - `eval:report` writes "Pending: … 3 of 40". `--check` passes after a write, fails after a hand edit inside the block, and ignores edits outside it.
+  - The landing page builds in both states. With a fake summary, the prerendered HTML showed `Run 2026-11-12`, `72.5`, `61.2`, `$0.00000041` and `1,707 ms`.
+- **Spend:** ≈ $0.0064.
+- **Checks:** 169 tests pass; typecheck, lint and build are clean.
