@@ -10,13 +10,19 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:smoke": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/db-smoke.ts"
+    "db:smoke": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/db-smoke.ts",
+    "corpus:fetch": "tsx scripts/corpus-fetch.ts",
+    "corpus:check-anchors": "tsx scripts/corpus-check-anchors.ts",
+    "ingest": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/ingest.ts",
+    "search": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/search.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "4.0.107",
     "@ai-sdk/react": "4.0.165",
     "@supabase/supabase-js": "2.118.0",
     "ai": "7.0.161",
+    "github-slugger": "2.0.0",
+    "gpt-tokenizer": "4.1.0",
     "next": "16.4.4",
     "react": "19.3.0",
     "react-dom": "19.3.0",

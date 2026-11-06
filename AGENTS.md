@@ -22,7 +22,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 A cited question-answering app over one documentation corpus. A learner, new hire or support agent types a plain-language question and gets a streamed answer in which every sentence carries an inline citation that links to the exact section it came from. When retrieval is not confident enough, the app says "I don't know" and shows the closest section instead of guessing. Alongside the app sits an eval suite (retrieval metrics, groundedness, judge calibration) whose results, compared per configuration, are the portfolio centerpiece.
 
-Pipeline: ingest docs → chunk (500–800 tokens, ~15% overlap, never across a heading) with heading path, source URL and anchor → embed → hybrid retrieval (vector + full-text, reciprocal rank fusion) → optional rerank → streamed answer with citations → refusal below a threshold.
+Pipeline: ingest docs → chunk by heading (a section plus its own sub-sections up to 800 tokens, ~15% overlap when a section is split; never into a sibling) with heading path, source URL and anchor → embed → hybrid retrieval (vector + full-text, reciprocal rank fusion) → optional rerank → streamed answer with citations → refusal below a threshold.
 
 Build the minimum scope in `CLAUDE.md`. Build no stretch item before deploy except the three the build guide schedules (rerank T25, playground T42, click-to-highlight T44). Build nothing out of scope, ever. Do not overbuild.
 
@@ -152,7 +152,8 @@ Match function: `match_documents`. HNSW index with the operator class matching t
 Ingest is offline tooling run with `npm run ingest`: loader → chunker → embedder → upsert into `chunks`.
 
 - The loader derives each chunk's source URL and heading anchors deterministically from the file path and headings.
-- The chunker never splits across a heading, keeps the heading path and a token count, and is fully unit-tested. Fixed-size chunking is the rejected alternative.
+- The chunker follows the heading structure: a section absorbs its own sub-sections while the total stays within 800 tokens, and never reaches a sibling or the next section, so its anchor always points at a heading that contains it (owner decision 5 Nov; strict one-section chunks gave a median of 112 tokens). Longer sections split at block boundaries with ~15% overlap. Headings inside tabs, accordions and admonitions are text, not sections, because the site gives them no id. Fully unit-tested. Fixed-size chunking is the rejected alternative.
+- Anchors are generated the way supabase.com renders them and checked against the live pages with `npm run corpus:check-anchors` (997 of 997 matched on 5 Nov). Re-run it after changing the pin or the loader.
 - **Ingest is idempotent.** A content hash per file and a hash of the chunking settings are stored in `sources`; when both are unchanged, a file is neither re-chunked nor re-embedded. Changing chunk size or overlap is the deliberate exception and re-embeds everything: print the estimated cost before running it.
 - Embeddings are batched and go through the model-call wrapper.
 - Raw docs go in the gitignored `corpus/`. Record the pinned commit in `sources`.
@@ -191,7 +192,7 @@ You cannot infer these from the code. Docs were read on 2 Nov 2026.
 
 - **AI SDK v7 differs from most tutorials.** Telemetry is `registerTelemetry(new OpenTelemetry())` from `@ai-sdk/otel` (not `experimental_telemetry`), and Langfuse's Next.js page still shows the v6 path. Chat routes use `createUIMessageStreamResponse` with `toUIMessageStream`. Read the installed docs first.
 - **Prompt caching is automatic and prefix-based.** No `cache_control`: a request reuses cached input only when the whole rendered prefix matches, and the docs give a 1,024-token minimum for GPT-5.6 and later (that `gpt-6-luna` counts as "later" is VERIFY). Read hits from `usage.inputTokenDetails.cacheReadTokens` (as PaperTrail does); reasoning tokens are already inside `outputTokens`. The docs also describe a 1.25× cache-write charge that the pricing table doesn't show: VERIFY before trusting a cost drop.
-- **pgvector HNSW:** `hnsw.ef_search` defaults to 40, so a top-50 candidate query can return fewer rows (VERIFY, then set it per query). HNSW on `vector` supports up to 2,000 dims.
+- **pgvector HNSW:** `hnsw.ef_search` (default 40) caps what an index scan returns. **Measured 5 Nov: `LIMIT 50` silently returned 40 rows at the default, and 50 at `ef_search` 50.** `match_documents` sets it to `greatest(match_count, 40)` for each call, so query through it, not with raw SQL. At this table size the planner may skip the index; force `enable_seqscan = off` when measuring. HNSW on `vector` supports up to 2,000 dims.
 - **Custom schema:** `supabase-js` reaches `citedesk` only if the schema is exposed in the project's API settings and granted to `service_role`; a missing grant looks like an empty result. Functions need the grant too.
 - **Full-text language:** the `fts` text-search config (`'english'` in Supabase's example) must match the corpus language.
 - **Evals and CI cost money.** `npm test` must never call a model, an embedding API or the network. CI needs `OPENAI_API_KEY` as a repo secret; ask before adding it.
@@ -235,7 +236,7 @@ Work the tasks in order; a task needs the ones before it. Legend: 📝 write an 
 
 ### Phase 2: Ingest (minimum scope 1–2)
 - **T07** 📝 Loader: reads `.mdx` files and derives the source URL and heading anchors deterministically.
-- **T08** 🎓 Chunker: 500–800 tokens, ~15% overlap, never across a heading, with heading path and token count. Tests come with it. Rejected alternative: fixed-size chunking.
+- **T08** 🎓 Chunker: by heading, sub-sections merged up to 800 tokens, ~15% overlap when splitting, with heading path and token count. Tests come with it. Rejected alternative: fixed-size chunking.
 - **T09** Embedder: batched `text-embedding-3-small` calls through the wrapper.
 - **T10** `npm run ingest`: idempotent via per-file and chunk-settings hashes in `sources`. Print the cost before a full re-embed.
 - **T11** 🎓 HNSW index (cosine ops) and the `match_documents` function, with the grants. Verify the `ef_search` behaviour. Rejected alternative: IVFFlat.

@@ -37,6 +37,13 @@ type InsertClient = {
   };
 };
 
+/** Writes each record to every sink, in order (scripts log to JSONL and the table). */
+export function combineSinks(...sinks: CallSink[]): CallSink {
+  return async (record) => {
+    for (const sink of sinks) await sink(record);
+  };
+}
+
 /** Routes: one citedesk.model_calls row per call. A failed insert throws; the log is never skipped quietly. */
 export function dbSink(client: InsertClient): CallSink {
   return async (record) => {
