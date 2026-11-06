@@ -7,7 +7,7 @@ export type EmbedFn = (values: string[]) => Promise<{ embeddings: number[][]; us
 
 /** The real embedder: OpenAI through the AI SDK. Tests pass a fake EmbedFn instead. */
 export const openaiEmbed: EmbedFn = (values) =>
-  embedMany({ model: openai.embedding(EMBEDDING_MODEL), values, maxParallelCalls: 2 });
+  embedMany({ model: openai.embedding(EMBEDDING_MODEL), values, maxParallelCalls: 2, telemetry: { functionId: "citedesk.embed" } });
 
 /**
  * Embeds texts in batches, one logged and priced model call per batch. Every vector is checked

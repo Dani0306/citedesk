@@ -4,6 +4,7 @@ import { execSync } from "node:child_process";
 import { existsSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
+import { combineSinks, dbSink, jsonlSink } from "../lib/calls/sinks";
 import { db } from "../lib/db/client";
 import { unwrap } from "../lib/db/result";
 import { loadQuestions, QUESTIONS_FILE, validateQuestions } from "../evals/inputs";
@@ -48,6 +49,11 @@ export async function checkedQuestions() {
 
 export async function insertEvalRun(row: { kind: "retrieval" | "generation" | "judge"; config: unknown; models: unknown; prices_read_on: string; cost_usd: number; results: unknown }): Promise<number> {
   return z.object({ id: z.number() }).parse(unwrap(await db().from("eval_runs").insert(row).select("id").single())).id;
+}
+
+/** JSONL always; the model_calls table too, unless CITEDESK_LOG_DB=0 (CI, so eval runs don't count toward the demo's daily cap). */
+export function scriptSink() {
+  return process.env.CITEDESK_LOG_DB === "0" ? jsonlSink() : combineSinks(jsonlSink(), dbSink(db()));
 }
 
 export function main(run: () => Promise<void>) {

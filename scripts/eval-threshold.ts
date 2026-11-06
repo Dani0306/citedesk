@@ -3,7 +3,7 @@
 // evals/runs/YYYY-MM-DD-threshold.json; set the chosen value as CITEDESK_REFUSAL_THRESHOLD.
 import { writeFileSync } from "node:fs";
 import path from "node:path";
-import { combineSinks, dbSink, jsonlSink } from "../lib/calls/sinks";
+import { combineSinks } from "../lib/calls/sinks";
 import { PRICING_READ_ON } from "../lib/cost/pricing";
 import { db } from "../lib/db/client";
 import { openaiEmbed } from "../lib/ingest/embed";
@@ -11,14 +11,14 @@ import { EMBEDDING_MODEL } from "../lib/models";
 import { supabaseMatch, vectorSearch } from "../lib/retrieve/vector";
 import { questionsHash, ThresholdSweep } from "../evals/schema";
 import { chooseThreshold, sweepThresholds } from "../evals/threshold";
-import { arg, checkedQuestions, gitSha, main, runFile } from "./eval-shared";
+import { arg, checkedQuestions, gitSha, main, runFile, scriptSink } from "./eval-shared";
 
 const pct = (x: number) => `${(x * 100).toFixed(0).padStart(3)}%`;
 
 main(async () => {
   const set = await checkedQuestions();
   let spent = 0;
-  const sink = combineSinks(jsonlSink(), dbSink(db()), async (r) => void (spent += r.costUsd));
+  const sink = combineSinks(scriptSink(), async (r) => void (spent += r.costUsd));
 
   const scores = [];
   for (const q of set.questions) {

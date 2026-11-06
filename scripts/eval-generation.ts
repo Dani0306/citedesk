@@ -5,14 +5,13 @@
 import { writeFileSync } from "node:fs";
 import path from "node:path";
 import { openaiGenerate } from "../lib/answer/answer";
-import { combineSinks, dbSink, jsonlSink } from "../lib/calls/sinks";
 import { db } from "../lib/db/client";
 import { openaiEmbed } from "../lib/ingest/embed";
 import { supabaseKeyword } from "../lib/retrieve/keyword";
 import { openaiRerank } from "../lib/retrieve/rerank";
 import { supabaseMatch } from "../lib/retrieve/vector";
 import { estimateGenerationUsd, GENERATION_CONFIGS, generationConfig, runGeneration } from "../evals/generation";
-import { arg, checkedQuestions, gitSha, insertEvalRun, main, maxUsdArg, runFile } from "./eval-shared";
+import { arg, checkedQuestions, gitSha, insertEvalRun, main, maxUsdArg, runFile, scriptSink } from "./eval-shared";
 
 const pct = (x: number | null) => (x === null ? "n/a" : `${(x * 100).toFixed(0)}%`);
 
@@ -37,7 +36,7 @@ main(async () => {
       keyword: supabaseKeyword(db()),
       rerank: openaiRerank,
       generate: openaiGenerate,
-      sink: combineSinks(jsonlSink(), dbSink(db())),
+      sink: scriptSink(),
     },
     { maxUsd, gitSha: gitSha(), note: arg("note") ?? null, date, onQuestion: (d, t) => process.stdout.write(`\r${d}/${t}`) },
   );

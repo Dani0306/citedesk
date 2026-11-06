@@ -23,7 +23,8 @@
     "eval:threshold": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/eval-threshold.ts",
     "eval:generation": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/eval-generation.ts",
     "eval:label": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/eval-label.ts",
-    "eval:judge": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/eval-judge.ts"
+    "eval:judge": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/eval-judge.ts",
+    "eval:cache": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/eval-cache.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "4.0.107",

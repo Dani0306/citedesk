@@ -1,7 +1,7 @@
 import { openai } from "@ai-sdk/openai";
 import { streamText, toUIMessageStream, type InferUIMessageChunk, type LanguageModelUsage, type ToolSet } from "ai";
 import { fromText, recordCall } from "../calls/record";
-import { defaultConfig, finishAnswer, prepareAnswer, type AnswerConfig, type AnswerResult, type PrepareDeps, type Reasoning } from "./answer";
+import { defaultConfig, finishAnswer, openaiOptions, prepareAnswer, type AnswerConfig, type AnswerResult, type CacheMode, type PrepareDeps, type Reasoning } from "./answer";
 import { sourceTitle } from "./prompt";
 import { closestSection } from "./refusal";
 import type { CiteMessage } from "./ui-message";
@@ -18,10 +18,11 @@ export type StreamGenerateFn = (args: {
   prompt: string;
   reasoning: Reasoning;
   maxOutputTokens: number;
+  cacheMode: CacheMode;
 }) => { chunks: ReadableStream<CiteChunk>; done: PromiseLike<{ text: string; usage: LanguageModelUsage; finishReason: string }> };
 
 /** The real streamed answer. Reasoning summaries stay server-side; store: false as elsewhere. */
-export const openaiStreamGenerate: StreamGenerateFn = ({ model, instructions, prompt, reasoning, maxOutputTokens }) => {
+export const openaiStreamGenerate: StreamGenerateFn = ({ model, instructions, prompt, reasoning, maxOutputTokens, cacheMode }) => {
   const result = streamText({
     model: openai(model),
     instructions,
@@ -29,7 +30,8 @@ export const openaiStreamGenerate: StreamGenerateFn = ({ model, instructions, pr
     reasoning,
     maxOutputTokens,
     timeout: 30_000,
-    providerOptions: { openai: { store: false } },
+    providerOptions: openaiOptions(cacheMode),
+    telemetry: { functionId: "citedesk.answer" },
   });
   return {
     chunks: toUIMessageStream<ToolSet, CiteMessage>({ stream: result.stream, sendStart: false, sendFinish: false, sendReasoning: false }),
@@ -92,6 +94,7 @@ export async function streamAnswer(
         prompt: ready.prompt,
         reasoning: config.reasoning,
         maxOutputTokens: config.maxOutputTokens,
+        cacheMode: config.cacheMode,
       });
       const reader = chunks.getReader();
       for (;;) {

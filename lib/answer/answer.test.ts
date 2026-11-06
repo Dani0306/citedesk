@@ -1,6 +1,6 @@
 import type { LanguageModelUsage } from "ai";
 import { describe, expect, it } from "vitest";
-import { answerQuestion, defaultConfig, type GenerateFn } from "@/lib/answer/answer";
+import { answerQuestion, defaultConfig, openaiOptions, type GenerateFn } from "@/lib/answer/answer";
 import { memorySink } from "@/lib/calls/sinks";
 import type { EmbedFn } from "@/lib/ingest/embed";
 import { EMBEDDING_DIMENSIONS } from "@/lib/models";
@@ -142,5 +142,23 @@ describe("answerQuestion", () => {
     const { records, sink } = memorySink();
     await expect(answerQuestion("   ", { embed, match: rows(0.7), generate: neverCalled, sink }, config)).rejects.toThrow();
     expect(records).toHaveLength(0);
+  });
+});
+
+describe("cache mode", () => {
+  it("turns caching off with explicit mode and no breakpoint, and leaves implicit alone", () => {
+    expect(openaiOptions("off")).toEqual({ openai: { store: false, promptCacheOptions: { mode: "explicit" } } });
+    expect(openaiOptions("implicit")).toEqual({ openai: { store: false } });
+  });
+
+  it("passes the configured mode to the answer call", async () => {
+    const seen: string[] = [];
+    const generate: GenerateFn = async (args) => {
+      seen.push(args.cacheMode);
+      return { text: "A [1].", usage, finishReason: "stop" };
+    };
+    const { sink } = memorySink();
+    await answerQuestion("q", { embed, match: rows(0.7), generate, sink }, { ...config, cacheMode: "off" });
+    expect(seen).toEqual(["off"]);
   });
 });
