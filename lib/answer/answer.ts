@@ -72,14 +72,28 @@ export type AnswerResult =
   | (Common & { kind: "answer"; answer: string; citations: CitationCheck; finishReason: string })
   | (Common & { kind: "refusal"; reason: RefusalReason; closest: ClosestSection | null });
 
-export type AnswerDeps = {
+/** Everything retrieval, the gate and the rerank need; the answer call is added by the caller. */
+export type PrepareDeps = {
   embed: EmbedFn;
   match: MatchFn;
   keyword?: KeywordFn;
   rerank?: RerankFn;
-  generate: GenerateFn;
   sink: CallSink;
   now?: () => number;
+};
+
+export type AnswerDeps = PrepareDeps & { generate: GenerateFn };
+
+export type Refusal = Extract<AnswerResult, { kind: "refusal" }>;
+
+/** Retrieval passed the gate: the prompt is built and the chunks are numbered as in it. */
+export type Ready = Omit<Common, "latencyMs"> & {
+  kind: "ready";
+  topVector: RankedChunk | null;
+  instructions: string;
+  prompt: string;
+  /** Milliseconds since the question arrived. */
+  latency: () => number;
 };
 
 export function defaultConfig(env: Record<string, string | undefined> = process.env): AnswerConfig {
@@ -101,11 +115,8 @@ export function defaultConfig(env: Record<string, string | undefined> = process.
   };
 }
 
-export async function answerQuestion(
-  rawQuestion: string,
-  deps: AnswerDeps,
-  config: AnswerConfig = defaultConfig(),
-): Promise<AnswerResult> {
+/** retrieve → gate → rerank → prompt. A refusal is final: no answer call follows it. */
+export async function prepareAnswer(rawQuestion: string, deps: PrepareDeps, config: AnswerConfig = defaultConfig()): Promise<Ready | Refusal> {
   const now = deps.now ?? (() => performance.now());
   const start = now();
   const question = Question.parse(rawQuestion);
@@ -141,25 +152,42 @@ export async function answerQuestion(
     rerankStatus = r.status;
   }
   const retrieved = ordered.slice(0, config.k).map((c, i) => ({ ...c, rank: i + 1 }));
-  const done = { ...base, retrieved, rerankStatus };
-
   const { instructions, prompt } = buildAnswerPrompt(question, retrieved);
-  const result = await recordCall(
-    deps.sink,
-    { purpose: "answer", model: config.answerModel },
-    () => deps.generate({ model: config.answerModel, instructions, prompt, reasoning: config.reasoning, maxOutputTokens: config.maxOutputTokens }),
-    fromText,
-  );
+  return { ...base, kind: "ready", retrieved, rerankStatus, topVector, instructions, prompt, latency };
+}
 
-  if (isModelRefusal(result.text)) {
-    return { ...done, kind: "refusal", reason: "not_in_sources", closest: closestSection(topVector ?? retrieved[0]), latencyMs: latency() };
+/** The model's finished text → an answer with checked citations, or the model's own refusal. */
+export function finishAnswer(ready: Ready, generation: { text: string; finishReason: string }): AnswerResult {
+  const { question, config, retrieved, topVectorSimilarity, rerankStatus, topVector, latency } = ready;
+  const done = { question, config, retrieved, topVectorSimilarity, rerankStatus };
+  if (isModelRefusal(generation.text)) {
+    return { ...done, kind: "refusal", reason: "not_in_sources", closest: closestSection(topVector ?? done.retrieved[0]), latencyMs: latency() };
   }
   return {
     ...done,
     kind: "answer",
-    answer: result.text,
-    citations: checkCitations(result.text, retrieved),
-    finishReason: result.finishReason,
+    answer: generation.text,
+    citations: checkCitations(generation.text, done.retrieved),
+    finishReason: generation.finishReason,
     latencyMs: latency(),
   };
+}
+
+export async function answerQuestion(rawQuestion: string, deps: AnswerDeps, config: AnswerConfig = defaultConfig()): Promise<AnswerResult> {
+  const ready = await prepareAnswer(rawQuestion, deps, config);
+  if (ready.kind === "refusal") return ready;
+  const result = await recordCall(
+    deps.sink,
+    { purpose: "answer", model: config.answerModel },
+    () =>
+      deps.generate({
+        model: config.answerModel,
+        instructions: ready.instructions,
+        prompt: ready.prompt,
+        reasoning: config.reasoning,
+        maxOutputTokens: config.maxOutputTokens,
+      }),
+    fromText,
+  );
+  return finishAnswer(ready, result);
 }
