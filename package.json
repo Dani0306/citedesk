@@ -14,7 +14,8 @@
     "corpus:fetch": "tsx scripts/corpus-fetch.ts",
     "corpus:check-anchors": "tsx scripts/corpus-check-anchors.ts",
     "ingest": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/ingest.ts",
-    "search": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/search.ts"
+    "search": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/search.ts",
+    "ask": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/ask.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "4.0.107",
