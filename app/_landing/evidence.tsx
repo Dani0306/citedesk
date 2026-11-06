@@ -1,12 +1,18 @@
+import { CONFIG_LABELS, formatMs, formatPoints, formatUsd, type EvidenceRow } from "@/lib/evidence";
 import { loadEvidence } from "./evidence-data";
 import { Section, stagger } from "./ui";
 
 const CONFIGS = [
-  { name: "Naive vector", planned: "week 2" },
-  { name: "Hybrid (vector + full-text, RRF)", planned: "week 3" },
-  { name: "Hybrid + rerank", planned: "week 3" },
+  { id: "vector", planned: "week 2" },
+  { id: "hybrid", planned: "week 3" },
+  { id: "hybrid-rerank", planned: "week 3" },
 ];
-const COLUMNS = ["Recall@5", "MRR", "Cost / query", "p95 latency"];
+const COLUMNS: { label: string; value: (r: EvidenceRow) => string }[] = [
+  { label: "Recall@5", value: (r) => formatPoints(r.recallAt5) },
+  { label: "MRR", value: (r) => formatPoints(r.mrr) },
+  { label: "Cost / query", value: (r) => formatUsd(r.costPerQueryUsd) },
+  { label: "p95 latency", value: (r) => formatMs(r.p95LatencyMs) },
+];
 
 const TARGETS = [
   {
@@ -27,6 +33,8 @@ function Pending() {
 
 export function Evidence() {
   const evidence = loadEvidence();
+  const rows = new Map(evidence.status === "measured" ? evidence.summary.rows.map((r) => [r.config, r]) : []);
+  const questionCount = evidence.status === "measured" ? evidence.summary.questionCount : evidence.questionCount;
 
   return (
     <Section
@@ -34,10 +42,13 @@ export function Evidence() {
       tone="surface"
       eyebrow="Evidence"
       title="Numbers, not adjectives."
-      intro="Every figure here will come from an eval run file in the repo, the same file the README table is generated from. No runs exist yet, so nothing is shown."
+      intro={
+        evidence.status === "measured"
+          ? "Every figure here comes from an eval run file in the repo, the same file the README table is generated from. Recall and MRR are in points (×100)."
+          : "Every figure here will come from an eval run file in the repo, the same file the README table is generated from. No runs on the full question set exist yet, so nothing is shown."
+      }
     >
-      {evidence.status === "pending" ? (
-        <>
+      <>
           {/* Outside the horizontal scroller on purpose: .table-scope gives the rows a timeline they can follow. */}
           <div className="table-scope">
             <div
@@ -48,7 +59,9 @@ export function Evidence() {
             >
               <table className="w-full min-w-150 text-left text-sm">
                 <caption className="sr-only">
-                  Retrieval ablation on 40 labelled questions. All results pending: no eval runs exist yet.
+                  {evidence.status === "measured"
+                    ? `Retrieval ablation on ${questionCount} labelled questions. Configurations without a run show Pending.`
+                    : "Retrieval ablation on 40 labelled questions. All results pending: no eval runs on the full set exist yet."}
                 </caption>
                 <thead>
                   <tr className="border-b border-line text-ink-2">
@@ -56,26 +69,31 @@ export function Evidence() {
                       Configuration
                     </th>
                     {COLUMNS.map((c) => (
-                      <th key={c} scope="col" className="px-5 py-4 text-right font-medium">
-                        {c}
+                      <th key={c.label} scope="col" className="px-5 py-4 text-right font-medium">
+                        {c.label}
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {CONFIGS.map((row, i) => (
-                    <tr key={row.name} style={stagger(i)} className="reveal-row border-b border-line last:border-0">
-                      <th scope="row" className="px-5 py-4 font-medium">
-                        {row.name}
-                        <span className="mt-0.5 block text-xs font-normal text-ink-2">Planned: {row.planned}</span>
-                      </th>
-                      {COLUMNS.map((c) => (
-                        <td key={c} className="px-5 py-4 text-right font-mono tabular-nums">
-                          <Pending />
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
+                  {CONFIGS.map((config, i) => {
+                    const measured = rows.get(config.id);
+                    return (
+                      <tr key={config.id} style={stagger(i)} className="reveal-row border-b border-line last:border-0">
+                        <th scope="row" className="px-5 py-4 font-medium">
+                          {CONFIG_LABELS[config.id]}
+                          <span className="mt-0.5 block text-xs font-normal text-ink-2">
+                            {measured ? `Run ${measured.runDate}` : `Planned: ${config.planned}`}
+                          </span>
+                        </th>
+                        {COLUMNS.map((c) => (
+                          <td key={c.label} className="px-5 py-4 text-right font-mono tabular-nums">
+                            {measured ? c.value(measured) : <Pending />}
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -96,11 +114,12 @@ export function Evidence() {
           </div>
 
           <p className="mt-6 max-w-2xl text-sm text-pretty text-ink-2">
-            The retrieval set is 40 questions, each labelled with the sections that should be found. It is being written
-            now. The generation set adds 10 questions the docs can’t answer, to measure refusals.
+            {evidence.status === "measured"
+              ? `Measured on ${questionCount} hand-labelled questions, each labelled with the sections that should be found.`
+              : "The retrieval set is 40 questions, each labelled with the sections that should be found. It is being written now."}{" "}
+            The generation set adds 10 questions the docs can’t answer, to measure refusals.
           </p>
         </>
-      ) : null}
     </Section>
   );
 }
