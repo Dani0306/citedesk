@@ -1,7 +1,5 @@
 import type { CallSink } from "../lib/calls/record";
-import { callCostUsd, PRICING_READ_ON } from "../lib/cost/pricing";
-import { countTokens } from "../lib/ingest/chunk";
-import { EMBEDDING_MODEL } from "../lib/models";
+import { PRICING_READ_ON } from "../lib/cost/pricing";
 import type { RetrievalConfig, RetrievalDeps } from "./configs";
 import { normaliseLabel } from "./labels";
 import { aggregate, percentile, scoreQuestion } from "./metrics";
@@ -16,12 +14,6 @@ export class SpendCapError extends Error {
     super(`Spent $${spent.toFixed(8)}, over the --max-usd cap of $${cap}; stopped before writing a run file`);
     this.name = "SpendCapError";
   }
-}
-
-/** Upper-bound cost of embedding every answerable question once, from the tokenizer. */
-export function estimateRetrievalCostUsd(set: QuestionSet): number {
-  const tokens = set.questions.filter((q) => q.answerable).reduce((sum, q) => sum + countTokens(q.question), 0);
-  return callCostUsd(EMBEDDING_MODEL, { noCacheInputTokens: tokens, cachedInputTokens: 0, cacheWriteTokens: 0, outputTokens: 0 });
 }
 
 export async function runRetrieval(
@@ -44,7 +36,7 @@ export async function runRetrieval(
   for (const q of answerable) {
     const before = spent;
     const start = now();
-    const chunks = await config.retrieve(q.question, { ...deps, sink });
+    const { chunks, rerankStatus } = await config.retrieve(q.question, { ...deps, sink }, { questionId: q.id });
     const latencyMs = Math.round(now() - start);
     if (spent > opts.maxUsd) throw new SpendCapError(spent, opts.maxUsd);
 
@@ -60,6 +52,7 @@ export async function runRetrieval(
       expected,
       retrieved: chunks.slice(0, config.params.k).map(({ chunkKey, similarity, rank }) => ({ chunkKey, similarity, rank })),
       firstRelevantRank: scored.firstRelevantRank,
+      rerankStatus,
       metrics: scored.metrics,
       stage: { retrieval: scored.stage },
       latencyMs,
@@ -76,11 +69,12 @@ export async function runRetrieval(
     gitSha: opts.gitSha,
     note: opts.note ?? null,
     config: { name: config.name, ...config.params },
-    models: { embedding: EMBEDDING_MODEL },
+    models: config.models,
     pricesReadOn: PRICING_READ_ON,
     questionsHash: questionsHash(set),
     questionCount: perQuestion.length,
     skippedUnanswerable: set.questions.length - answerable.length,
+    rerankSkipped: perQuestion.filter((r) => r.rerankStatus === "skipped").length,
     costUsd,
     costPerQueryUsd: Math.round((spent / perQuestion.length) * 1e8) / 1e8,
     latencyMs: { p50: percentile(latencies, 0.5), p95: percentile(latencies, 0.95) },

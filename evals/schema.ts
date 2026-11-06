@@ -55,6 +55,7 @@ export const QuestionResult = z.object({
   expected: z.array(z.string()),
   retrieved: z.array(z.object({ chunkKey: z.string(), similarity: z.number(), rank: z.number().int().positive() })),
   firstRelevantRank: z.number().int().positive().nullable(),
+  rerankStatus: z.enum(["off", "applied", "skipped"]),
   metrics: Metrics,
   /** One entry per pipeline stage; generation and judge runs add theirs. */
   stage: z.object({ retrieval: RetrievalStage }),
@@ -69,12 +70,14 @@ export const RetrievalRun = z.object({
   gitSha: z.string().min(1),
   note: z.string().nullable(),
   config: z.object({ name: z.string().min(1), k: z.number().int().positive() }).catchall(z.unknown()),
-  models: z.object({ embedding: z.string().min(1) }),
+  models: z.object({ embedding: z.string().min(1), rerank: z.string().min(1).nullable() }),
   pricesReadOn: z.iso.date(),
   questionsHash: z.string().length(64),
   /** Answerable questions scored; unanswerable ones are skipped by retrieval runs. */
   questionCount: z.number().int().positive(),
   skippedUnanswerable: z.number().int().nonnegative(),
+  /** Questions where the rerank failed and fused order was used instead. */
+  rerankSkipped: z.number().int().nonnegative(),
   costUsd: z.number().nonnegative(),
   costPerQueryUsd: z.number().nonnegative(),
   latencyMs: z.object({ p50: z.number().int().nonnegative(), p95: z.number().int().nonnegative() }),
