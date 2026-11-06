@@ -19,9 +19,11 @@ export function gitSha(): string {
 
 export const RUNS_DIR = path.join(process.cwd(), "evals", "runs");
 
-/** evals/runs/YYYY-MM-DD-<kind>[-<name>].json, numbered if that name is taken. */
+/** evals/runs/YYYY-MM-DD-<kind>[-<name>].json, numbered if that name is taken; `--out=` overrides (CI). */
 export function runFile(kind: string, name: string | null, date: Date): string {
   mkdirSync(RUNS_DIR, { recursive: true });
+  const out = arg("out");
+  if (out) return path.resolve(out);
   const base = `${date.toISOString().slice(0, 10)}-${kind}${name ? `-${name}` : ""}`;
   for (let n = 1; ; n++) {
     const file = path.join(RUNS_DIR, `${base}${n === 1 ? "" : `-${n}`}.json`);
@@ -48,7 +50,9 @@ export async function checkedQuestions() {
   return set;
 }
 
-export async function insertEvalRun(row: { kind: "retrieval" | "generation" | "judge"; config: unknown; models: unknown; prices_read_on: string; cost_usd: number; results: unknown }): Promise<number> {
+/** The eval_runs copy of a run file; skipped (null) under CITEDESK_LOG_DB=0, so CI writes nothing to the database. */
+export async function insertEvalRun(row: { kind: "retrieval" | "generation" | "judge"; config: unknown; models: unknown; prices_read_on: string; cost_usd: number; results: unknown }): Promise<number | null> {
+  if (process.env.CITEDESK_LOG_DB === "0") return null;
   return z.object({ id: z.number() }).parse(unwrap(await db().from("eval_runs").insert(row).select("id").single())).id;
 }
 

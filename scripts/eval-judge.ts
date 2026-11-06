@@ -48,5 +48,5 @@ main(async () => {
     console.log(`\nDisagreements (edit the rubric, never the labels):`);
     for (const s of disagreements) console.log(`  ${s.questionId}#${s.index}  human ${s.human}, judge ${s.judge}: ${s.reason}`);
   }
-  console.log(`\nWrote ${path.relative(process.cwd(), file)} · eval_runs ${id}`);
+  console.log(`\nWrote ${path.relative(process.cwd(), file)} · eval_runs ${id ?? "not written"}`);
 });

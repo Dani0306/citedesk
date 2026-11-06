@@ -55,5 +55,5 @@ main(async () => {
     console.log(`  ${q.outcome.padEnd(22)} ${q.id}  top ${q.topVectorSimilarity?.toFixed(3) ?? "—"}  ${q.question}`);
   }
   for (const q of run.perQuestion.filter((q) => q.invalidMarkers.length)) console.log(`  hallucinated [${q.invalidMarkers.join("][")}] in ${q.id}`);
-  console.log(`\nWrote ${path.relative(process.cwd(), file)} · eval_runs ${id}`);
+  console.log(`\nWrote ${path.relative(process.cwd(), file)} · eval_runs ${id ?? "not written"}`);
 });

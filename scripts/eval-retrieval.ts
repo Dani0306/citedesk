@@ -16,7 +16,7 @@ import { arg, checkedQuestions, gitSha, insertEvalRun, main, maxUsdArg, runFile,
 
 const pts = (x: number) => (x * 100).toFixed(1).padStart(5);
 
-function printSummary(run: RetrievalRun, file: string, evalRunId: number) {
+function printSummary(run: RetrievalRun, file: string, evalRunId: number | null) {
   const m = run.metrics;
   console.log(`\n${run.config.name} · ${run.questionCount} questions (${run.skippedUnanswerable} unanswerable skipped) · hash ${run.questionsHash.slice(0, 12)}`);
   console.log("recall@5  recall@8  recall@20    MRR  nDCG@10   (points)");
@@ -28,7 +28,7 @@ function printSummary(run: RetrievalRun, file: string, evalRunId: number) {
     console.log(`\nMissed at 20 (${misses.length}):`);
     for (const r of misses) console.log(`  ${r.id}  ${r.question}\n        expected ${r.expected.join(", ")}\n        got #1 ${r.retrieved[0]?.chunkKey ?? "—"}`);
   }
-  console.log(`\nWrote ${path.relative(process.cwd(), file)} · eval_runs ${evalRunId}`);
+  console.log(`\nWrote ${path.relative(process.cwd(), file)} · eval_runs ${evalRunId ?? "not written"}`);
 }
 
 main(async () => {
