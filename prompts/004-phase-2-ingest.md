@@ -1,6 +1,6 @@
 # 004 — Phase 2: ingest (T07–T12)
 
-**Status:** draft
+**Status:** done (T07–T11); T12's 10 searches are the owner's
 **Branch:** `feat/ingest` (from `main` after PR #2)
 **Week:** 1 (build guide Phase 2; T12 closes week 1's goal)
 
@@ -185,4 +185,37 @@ Run `npm run search "<question>"` for each question below. For each one, note wh
 
 ## Results
 
-Filled in after the work.
+Built and run 5–6 Nov 2026 on `feat/ingest`. **Spend: $0.00423** for the ingest, plus about $0.000001 for one search.
+
+**Corpus (`corpus:fetch`):** 129 guide files and the partials folder at `aa9d04e`, in about 2 s. A re-run is a no-op.
+
+**Loader (T07):** an anchor check against the live pages.
+- The first run matched **96.8% (969/1001)**. The 32 misses taught us three things the code we read hadn't:
+  - the site **drops underscores** (`http_get` → `httpget`);
+  - inline code touching punctuation is **space-padded** (`(`vector_l2_ops`)` → `--vectorl2ops-`);
+  - **headings inside tabs, accordions and admonitions get no id**.
+- One of the misses was our own bug: `_l2_` was read as italics.
+- After the fixes: **100% (997/997)**.
+
+**Chunker (T08), a decision made mid-task:** the dry run showed strict one-section chunks give **1,161 chunks** (median 112, min 5), over T01's 1,000. "500–800 tokens" and "never across a heading" can't both hold on these docs. A free simulation compared the rules, and the owner chose **merging sub-sections up to 800 tokens**. Result:
+- **835 chunks**, 797 distinct `chunk_key`s;
+- tokens: min 10, median 166, p90 623, max 800, with **0 above 800**;
+- 713 below 500. That floor is unreachable under any heading-respecting rule.
+
+**Embedder and ingest (T09, T10):**
+- The dry-run estimate and the API's reported usage were **both 211,482 tokens**, because the cl100k count is exact. 9 batched calls, $0.00422964, no failures.
+- 9 `model_calls` rows match 9 JSONL lines. All vectors are 1536-dim. 129 sources, 0 half-written.
+- **Re-run: 0 files planned, $0.**
+
+**T11, `match_documents`:**
+- The HNSW (cosine) index is used, and EXPLAIN shows an index scan.
+- **The `ef_search` VERIFY is closed: `LIMIT 50` returned 40 rows at the default `ef_search` 40, and 50 at `ef_search` 50.** `match_documents(…, 50)` returns 50, because it raises `ef_search` itself.
+- Only `service_role` can execute it. The security advisor shows only the six intended "RLS enabled, no policy" INFO notes.
+
+**First search:** "How do I create a partial index?" put `indexes#partial-indexes` at rank 1 with similarity 0.684, against 0.481 for rank 2. Supabase's 0.78 example threshold would have refused that correct answer, which is a first data point for T33.
+
+**Checks:** typecheck, lint, 78 tests and build pass.
+
+**Still open:**
+- T12: the owner's 10 by-hand searches.
+- Whether larger chunks help recall: an ablation once the T20 labels exist (open decision 2).
