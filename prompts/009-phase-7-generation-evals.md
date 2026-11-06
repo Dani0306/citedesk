@@ -1,6 +1,6 @@
 # 009 — Phase 7: generation evals (T33–T37)
 
-**Status:** draft
+**Status:** done (tooling for T33–T37); every measurement waits on the owner's T20, T33 and T35 hand work
 **Branch:** `feat/generation-evals` (from `main` after PR #7)
 **Week:** 4 (build guide Phase 7)
 
@@ -180,4 +180,23 @@ So I build and test all the tooling and prove it end to end on a plumbing set (t
 
 ## Results
 
-Filled in after the work.
+- **Owner decision (6 Nov):** I draft `evals/rubric.md`, and you edit it before labelling.
+- **Plumbing set:** the 3 worked examples plus 2 unanswerable questions (TOTP MFA, a MongoDB index), in a scratch file that was never committed.
+- **`eval:threshold`:**
+  - top vector similarity: answerable r03 0.447, r01 0.534 and r02 0.618; unanswerable u01 0.312 and u02 0.470;
+  - the sweep chose **0.48** (balanced accuracy 83%);
+  - **at the provisional 0.60, 2 of the 3 answerable paraphrases are refused.** Five questions decide nothing, but this agrees with prompt 007's r03 finding;
+  - cost $0.0000017.
+- **`eval:generation` (vector, threshold 0.60):**
+  - 0 hallucinated citations; correct refusals 2 of 2; false refusals 2 of 3 (r01, r03);
+  - r02 was answered from a retrieval that missed all its labelled sections, citing a neighbouring "Vector columns › Indexes" passage and saying the sources don't name an index type. Citation precision is 0%, the "miss" row of the diagnosis;
+  - cost $0.000248; written to `eval_runs` 5.
+- **`eval:judge` on sol** (self-test labels I wrote for plumbing, then deleted):
+  - the structured output parsed and validated;
+  - the reason was "The passage recommends adding an index as the table grows … and does not specify an index type";
+  - 1,099 input tokens (1,096 written to the cache, mostly the rubric, which repeats across judgements) plus 53 output, $0.0033, 2.9 s;
+  - written to `eval_runs` 6.
+- **`eval:label`:** reading input through `rl.question()` dropped lines that were piped or typed ahead. It now reads through the line iterator and treats the end of input as quit. A piped run saved a label with its note, and a re-run resumed at "1 labelled, 0 to go".
+- **`eval:report`** parsed the generation and judge run files and still reported Pending, because the runs don't qualify. Both README blocks and the landing cards stay "Pending" / "—".
+- **Spend:** ≈ $0.0035.
+- **Checks:** 210 tests pass; typecheck, lint and build are clean.
