@@ -78,7 +78,7 @@ describe("recordCall", () => {
   it("writes one priced record for a successful call and returns its result", async () => {
     const { records, sink } = memorySink();
     const result = { text: "hi", usage: usage({ inputTokens: 1000, outputTokens: 100, raw: { input_tokens: 1000 } }) };
-    const out = await recordCall(sink, { purpose: "answer", model: "gpt-6-luna" }, async () => result, fromText, clock());
+    const out = await recordCall(sink, { purpose: "answer", model: "gpt-6-luna" }, async () => result, fromText, { now: clock() });
 
     expect(out).toBe(result);
     expect(records).toHaveLength(1);
@@ -99,11 +99,23 @@ describe("recordCall", () => {
   it("logs a failed call as api_error, then re-throws", async () => {
     const { records, sink } = memorySink();
     const failing = () => Promise.reject(new Error("429 rate limited"));
-    await expect(recordCall(sink, { purpose: "rerank", model: "gpt-6-luna", queryId: 7 }, failing, fromText, clock())).rejects.toThrow(
+    await expect(recordCall(sink, { purpose: "rerank", model: "gpt-6-luna", queryId: 7 }, failing, fromText, { now: clock() })).rejects.toThrow(
       "429 rate limited",
     );
     expect(records).toHaveLength(1);
     expect(records[0]).toMatchObject({ outcome: "api_error", error: "429 rate limited", costUsd: 0, inputTokens: 0, queryId: 7 });
+  });
+
+  it("logs a returned-but-rejected result as invalid_output with its tokens, and still returns it", async () => {
+    const { records, sink } = memorySink();
+    const result = { output: { ids: ["c99"] }, usage: usage({ inputTokens: 1000, outputTokens: 20 }) };
+    const out = await recordCall(sink, { purpose: "rerank", model: "gpt-6-luna" }, async () => result, fromText, {
+      now: clock(),
+      check: () => "unknown id c99",
+    });
+    expect(out).toBe(result);
+    expect(records[0]).toMatchObject({ outcome: "invalid_output", error: "unknown id c99", inputTokens: 1000, outputTokens: 20 });
+    expect(records[0].costUsd).toBeGreaterThan(0);
   });
 
   it("refuses an unpriced model before making the call", async () => {

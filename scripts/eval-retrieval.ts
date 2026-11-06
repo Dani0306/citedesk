@@ -1,6 +1,7 @@
-// npm run eval:retrieval -- --config=vector [--max-usd=0.05] [--note="..."]
+// npm run eval:retrieval -- --config=vector|hybrid|hybrid-rerank [--max-usd=…] [--note="..."]
 // Scores one retrieval config over evals/questions.json and writes evals/runs/YYYY-MM-DD-retrieval-<config>.json
-// plus a copy in citedesk.eval_runs. One query embedding per answerable question (~$0.0000003 each).
+// plus a copy in citedesk.eval_runs. vector and hybrid: one query embedding per question (~$0.0000003);
+// hybrid-rerank adds one gpt-6-luna call per question (~$0.0015, worst case ~$0.0026). Each config has a default cap.
 import { execSync } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
@@ -9,10 +10,12 @@ import { combineSinks, dbSink, jsonlSink } from "../lib/calls/sinks";
 import { db } from "../lib/db/client";
 import { unwrap } from "../lib/db/result";
 import { openaiEmbed } from "../lib/ingest/embed";
+import { supabaseKeyword } from "../lib/retrieve/keyword";
+import { openaiRerank } from "../lib/retrieve/rerank";
 import { supabaseMatch } from "../lib/retrieve/vector";
-import { CONFIGS } from "../evals/configs";
+import { makeConfigs } from "../evals/configs";
 import { loadQuestions, validateQuestions } from "../evals/inputs";
-import { estimateRetrievalCostUsd, runRetrieval } from "../evals/retrieval";
+import { runRetrieval } from "../evals/retrieval";
 import type { RetrievalRun } from "../evals/schema";
 
 const arg = (name: string) => process.argv.slice(2).find((a) => a.startsWith(`--${name}=`))?.split("=").slice(1).join("=");
@@ -40,6 +43,7 @@ function printSummary(run: RetrievalRun, file: string, evalRunId: number) {
   console.log("recall@5  recall@8  recall@20    MRR  nDCG@10   (points)");
   console.log(`   ${pts(m.recallAt5)}     ${pts(m.recallAt8)}      ${pts(m.recallAt20)}  ${pts(m.mrr)}    ${pts(m.ndcgAt10)}`);
   console.log(`cost $${run.costUsd.toFixed(8)} ($${run.costPerQueryUsd.toFixed(8)}/query) · latency p50 ${run.latencyMs.p50} ms, p95 ${run.latencyMs.p95} ms`);
+  if (run.models.rerank) console.log(`rerank skipped (fell back to fused order) on ${run.rerankSkipped} of ${run.questionCount}`);
   const misses = run.perQuestion.filter((r) => r.firstRelevantRank === null);
   if (misses.length) {
     console.log(`\nMissed at 20 (${misses.length}):`);
@@ -50,9 +54,10 @@ function printSummary(run: RetrievalRun, file: string, evalRunId: number) {
 
 async function main() {
   const name = arg("config") ?? "vector";
-  const config = CONFIGS[name];
-  if (!config) throw new Error(`Unknown --config=${name}. Known: ${Object.keys(CONFIGS).join(", ")}`);
-  const maxUsd = Number(arg("max-usd") ?? "0.05");
+  const configs = makeConfigs();
+  const config = configs[name];
+  if (!config) throw new Error(`Unknown --config=${name}. Known: ${Object.keys(configs).join(", ")}`);
+  const maxUsd = Number(arg("max-usd") ?? String(config.defaultMaxUsd));
   if (!Number.isFinite(maxUsd) || maxUsd <= 0) throw new Error("--max-usd must be a positive number");
 
   const set = loadQuestions();
@@ -62,7 +67,7 @@ async function main() {
     throw new Error(`${problems.length} label problem(s); fix them (npm run eval:check) before running`);
   }
 
-  const estimate = estimateRetrievalCostUsd(set);
+  const estimate = config.estimateUsd(set);
   console.log(`Estimate: $${estimate.toFixed(8)} for ${set.questions.filter((q) => q.answerable).length} questions (cap $${maxUsd})`);
   if (estimate > maxUsd) throw new Error("Estimate is above --max-usd; nothing was spent");
 
@@ -70,7 +75,13 @@ async function main() {
   const run = await runRetrieval(
     set,
     config,
-    { embed: openaiEmbed, match: supabaseMatch(db()), sink: combineSinks(jsonlSink(), dbSink(db())) },
+    {
+      embed: openaiEmbed,
+      match: supabaseMatch(db()),
+      keyword: supabaseKeyword(db()),
+      rerank: openaiRerank,
+      sink: combineSinks(jsonlSink(), dbSink(db())),
+    },
     { maxUsd, gitSha: gitSha(), note: arg("note") ?? null, date, onQuestion: (done, total) => process.stdout.write(`\r${done}/${total}`) },
   );
 

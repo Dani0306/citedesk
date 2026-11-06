@@ -28,10 +28,13 @@ export function refusalThreshold(env: Record<string, string | undefined> = proce
   return { value, source: "env" };
 }
 
-/** Returns the reason to refuse before prompting, or null to go on and answer. */
-export function gate(chunks: Pick<RetrievedChunk, "similarity">[], threshold: number): RefusalReason | null {
-  if (chunks.length === 0) return "no_matches";
-  return chunks[0].similarity < threshold ? "low_score" : null;
+/**
+ * Returns the reason to refuse before prompting, or null to go on and answer. `topSimilarity` is
+ * the vector arm's rank-1 similarity in every retrieval mode (null: retrieval found nothing).
+ */
+export function gate(topSimilarity: number | null, threshold: number): RefusalReason | null {
+  if (topSimilarity === null) return "no_matches";
+  return topSimilarity < threshold ? "low_score" : null;
 }
 
 /** The model followed rule 5. Tolerates a curly apostrophe and a missing full stop, nothing more. */

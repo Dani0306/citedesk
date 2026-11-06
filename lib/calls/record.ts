@@ -99,14 +99,16 @@ export function buildRecord(
 /**
  * Runs one model call and writes exactly one record for it. An unpriced model throws before the
  * call is made, so nothing is ever spent without a price. A failed call is logged as api_error
- * with zero tokens (the provider reports no usage for it) and the error is re-thrown.
+ * with zero tokens (the provider reports no usage for it) and the error is re-thrown. `check`
+ * vets a result the API did return: a message makes it invalid_output, logged with its tokens
+ * because they were spent; the result is still returned so the caller can fall back.
  */
 export async function recordCall<T>(
   sink: CallSink,
   meta: CallMeta,
   run: () => Promise<T>,
   readUsage: (result: T) => { tokens: CallTokens; raw: unknown },
-  now: () => number = () => performance.now(),
+  { now = () => performance.now(), check }: { now?: () => number; check?: (result: T) => string | null } = {},
 ): Promise<T> {
   priceFor(meta.model);
   const start = now();
@@ -119,6 +121,14 @@ export async function recordCall<T>(
     throw error;
   }
   const { tokens, raw } = readUsage(result);
-  await sink(buildRecord(meta, tokens, { outcome: "ok", latencyMs: now() - start, rawUsage: raw }));
+  const problem = check?.(result) ?? null;
+  await sink(
+    buildRecord(meta, tokens, {
+      outcome: problem ? "invalid_output" : "ok",
+      latencyMs: now() - start,
+      error: problem,
+      rawUsage: raw,
+    }),
+  );
   return result;
 }

@@ -4,6 +4,8 @@ import { answerQuestion, defaultConfig, type GenerateFn } from "@/lib/answer/ans
 import { memorySink } from "@/lib/calls/sinks";
 import type { EmbedFn } from "@/lib/ingest/embed";
 import { EMBEDDING_DIMENSIONS } from "@/lib/models";
+import type { KeywordFn } from "@/lib/retrieve/keyword";
+import type { RerankFn } from "@/lib/retrieve/rerank";
 import type { MatchFn } from "@/lib/retrieve/vector";
 
 const embed: EmbedFn = async (values) => ({
@@ -97,6 +99,43 @@ describe("answerQuestion", () => {
     };
     await expect(answerQuestion("q", { embed, match: rows(0.7), generate: failing, sink }, config)).rejects.toThrow("rate limited");
     expect(records.at(-1)).toMatchObject({ purpose: "answer", outcome: "api_error", error: "rate limited" });
+  });
+
+  it("hybrid + rerank: gates on the vector arm, reranks the fused pool and sends the top k", async () => {
+    const keyword: KeywordFn = async () => [
+      { id: 900, chunk_key: "ai/k#hit", heading_path: ["K"], anchor: "hit", source_url: "https://supabase.com/docs/guides/ai/k#hit", content: "kw", similarity: 0.3, keyword_rank: 3 },
+    ];
+    const seen: string[] = [];
+    const rerank: RerankFn = async (args) => {
+      seen.push(args.prompt);
+      return { output: { ids: ["c3", "c1"] }, usage, finishReason: "stop" };
+    };
+    const { generate } = replying("Answer [1].");
+    const { records, sink } = memorySink();
+    const r = await answerQuestion(
+      "q",
+      { embed, match: rows(0.65, 0.5), keyword, rerank, generate, sink },
+      { ...config, retrieval: "hybrid", rerank: true, k: 2 },
+    );
+    expect(r).toMatchObject({ kind: "answer", rerankStatus: "applied", topVectorSimilarity: 0.65 });
+    // Fused order is 100, 900, 101; the reranker picked c3 (101) then c1 (100).
+    expect(r.retrieved.map((c) => [c.id, c.rank])).toEqual([
+      [101, 1],
+      [100, 2],
+    ]);
+    expect(records.map((x) => x.purpose)).toEqual(["embed_query", "rerank", "answer"]);
+    expect(seen).toHaveLength(1);
+  });
+
+  it("never pays for a rerank when the gate refuses", async () => {
+    const { records, sink } = memorySink();
+    const rerank: RerankFn = async () => {
+      throw new Error("the reranker must not be called");
+    };
+    const keyword: KeywordFn = async () => [];
+    const r = await answerQuestion("q", { embed, match: rows(0.4), keyword, rerank, generate: neverCalled, sink }, { ...config, retrieval: "hybrid", rerank: true });
+    expect(r).toMatchObject({ kind: "refusal", reason: "low_score", rerankStatus: "skipped" });
+    expect(records.map((x) => x.purpose)).toEqual(["embed_query"]);
   });
 
   it("rejects an empty question before spending anything", async () => {

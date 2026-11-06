@@ -1,26 +1,32 @@
 import fs from "node:fs";
 import path from "node:path";
+import { EvidenceSummary } from "@/lib/evidence";
 
-// The Evidence section only ever shows numbers from eval run files. Until runs exist it
-// renders "pending". Synchronous reads are prerendered into the static shell under
-// Cache Components (Next 16 caching docs, "Predictable values").
+// The Evidence section only ever shows numbers from evals/evidence.json, which `npm run eval:report`
+// renders from the run files (T27) and which only lists runs on the full labelled set. Synchronous
+// reads are prerendered into the static shell under Cache Components (Next 16 caching docs,
+// "Predictable values").
 
-export type Evidence = { status: "pending" };
+export type Evidence = { status: "pending"; questionCount: number; minQuestions: number } | { status: "measured"; summary: EvidenceSummary };
 
-export const RUNS_DIR = path.join(process.cwd(), "evals", "runs");
+export const EVALS_DIR = path.join(process.cwd(), "evals");
 
-export function loadEvidence(dir: string = RUNS_DIR): Evidence {
-  // ci-*.json files are the CI gate's scratch output and are gitignored. The page is fully
-  // prerendered, so the deployed server never needs these files: keep Turbopack from tracing them.
-  const runs = fs.existsSync(/*turbopackIgnore: true*/ dir)
-    ? fs.readdirSync(/*turbopackIgnore: true*/ dir).filter((f) => f.endsWith(".json") && !f.startsWith("ci-"))
-    : [];
-  if (runs.length === 0) return { status: "pending" };
-
-  // Fail the build rather than show "pending" over real results, or a format guessed
-  // before T21 defines it.
-  throw new Error(
-    `Found ${runs.length} eval run file(s) in ${dir}, but the landing page's Evidence section ` +
-      "isn't wired to the run-file schema yet. Wire loadEvidence() to it (build guide T27) before building.",
-  );
+export function loadEvidence(dir: string = EVALS_DIR): Evidence {
+  const summaryFile = path.join(dir, "evidence.json");
+  const runsDir = path.join(dir, "runs");
+  // The page is fully prerendered, so the deployed server never reads these: keep Turbopack from tracing them.
+  if (!fs.existsSync(/*turbopackIgnore: true*/ summaryFile)) {
+    const runs = fs.existsSync(/*turbopackIgnore: true*/ runsDir)
+      ? fs.readdirSync(/*turbopackIgnore: true*/ runsDir).filter((f) => f.endsWith(".json") && !f.startsWith("ci-"))
+      : [];
+    // Fail the build rather than show "pending" over results that exist but were never summarised.
+    if (runs.length > 0) {
+      throw new Error(`Found ${runs.length} eval run file(s) but no evals/evidence.json. Run npm run eval:report before building.`);
+    }
+    return { status: "pending", questionCount: 0, minQuestions: 40 };
+  }
+  const summary = EvidenceSummary.parse(JSON.parse(fs.readFileSync(/*turbopackIgnore: true*/ summaryFile, "utf8")));
+  return summary.rows.length === 0
+    ? { status: "pending", questionCount: summary.questionCount, minQuestions: summary.minQuestions }
+    : { status: "measured", summary };
 }

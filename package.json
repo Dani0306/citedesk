@@ -18,7 +18,8 @@
     "ask": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/ask.ts",
     "eval:check": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/eval-check.ts",
     "eval:keys": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/eval-keys.ts",
-    "eval:retrieval": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/eval-retrieval.ts"
+    "eval:retrieval": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/eval-retrieval.ts",
+    "eval:report": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/eval-report.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "4.0.107",

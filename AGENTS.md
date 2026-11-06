@@ -179,7 +179,7 @@ Evals are separate scripts (`npm run eval:*`), never part of `npm test`, because
 
 - **Scoring and normalisation live in one tested place** (`evals/`). A formatting mismatch is a scorer bug, not a model error; fix the scorer, never the data to fit it.
 - Labels live in `evals/questions.json` and are keyed by `chunk_key` (a live URL with its `#anchor` also works; `evals/labels.ts` normalises both). A label must name a key that exists: `npm run eval:check` rejects unknown keys and names the parent when a sub-section was merged into its parent's chunk. Never label from search results (`eval:keys` lists a page's keys instead); that measures the system against itself. Per-question results record every stage (retrieved the labelled section? cited it? answer grounded?), so a failure is attributed to retrieval or generation, never just "wrong".
-- Each run writes a file to `evals/runs/` with models, config, prices-read date, cost and results. Ablation rows come from run files, never from memory or estimates.
+- Each run writes a file to `evals/runs/` with models, config, prices-read date, cost and results. Ablation rows come from run files, never from memory or estimates. `npm run eval:report` renders the README table and `evals/evidence.json` (the only eval numbers the app shows) from them, counting only runs on the full labelled set (`MIN_EVIDENCE_QUESTIONS`, 40); `--check` fails on drift. Runs on a smaller set are plumbing checks: don't commit them.
 - Every runner prints its total cost and takes a spend cap. Do not run an eval in a loop.
 - In evals, shuffle candidate and evidence order for the reranker and the judge (position bias).
 - `evals/baseline.json` is committed. CI fails if a headline metric drops more than 2 points below it. Change the baseline only on purpose, in its own commit, with the reason.
@@ -197,6 +197,8 @@ You cannot infer these from the code. Docs were read on 2 Nov 2026.
 - **Custom schema:** `supabase-js` reaches `citedesk` only if the schema is exposed in the project's API settings and granted to `service_role`; a missing grant looks like an empty result. Functions need the grant too.
 - **Migration versions:** the Supabase MCP's `apply_migration` records its own timestamp as the version, not the local filename's. After applying, read `list_migrations` and name the file `supabase/migrations/<that version>_<name>.sql`, or a later `supabase db push` will try to re-apply it (all three were renamed to match on 6 Nov).
 - **Full-text language:** the `fts` text-search config (`'english'` in Supabase's example) must match the corpus language.
+- **Full-text queries: OR the lexemes.** Supabase's example uses `websearch_to_tsquery`, which ANDs every word: for natural-sentence questions it matched 0 of 835 chunks (measured 6 Nov). `keyword_documents` ORs the question's lexemes and ranks by `ts_rank_cd` over the weighted `fts` (headings A, body B). A generated column can only call immutable functions and `array_to_string` is stable, hence the `citedesk.heading_text` wrapper.
+- **The gate runs before the rerank** and reads the vector arm's top similarity in every mode, so a refused question never pays for a rerank and a keyword-only hit can't lift a question past the gate. A live rerank of 50 candidates cost $0.00148 and 3.4 s (11,160 input tokens, again almost all cache-written).
 - **Evals and CI cost money.** `npm test` must never call a model, an embedding API or the network. CI needs `OPENAI_API_KEY` as a repo secret; ask before adding it.
 - **The Next.js block above is managed.** `next dev` rewrites it; leave the markers alone.
 
@@ -218,7 +220,7 @@ npm run test:watch
 - `npm run typecheck`, `npm run lint` and `npm test` — always.
 - `npm run build` — when routes, config or server modules change.
 - `npm run dev` and click through — for UI changes.
-- `ingest` and `eval:*` — only when the task is about them or the owner asks; report the cost. In `package.json`: `ingest`, `search`, `ask`, `eval:check` and `eval:keys` (free), `eval:retrieval`. Planned: add each with the task that needs it (`eval:generation`, `eval:judge`, `eval:smoke`, `eval:report`, `eval:gate`).
+- `ingest` and `eval:*` — only when the task is about them or the owner asks; report the cost. In `package.json`: `ingest`, `search`, `ask`, `eval:check`, `eval:keys` and `eval:report` (free), `eval:retrieval` (configs `vector`, `hybrid`, `hybrid-rerank`). Planned: add each with the task that needs it (`eval:generation`, `eval:judge`, `eval:smoke`, `eval:gate`).
 
 ---
 
