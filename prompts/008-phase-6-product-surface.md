@@ -1,6 +1,6 @@
 # 008 — Phase 6: product surface (T28–T32)
 
-**Status:** draft
+**Status:** done
 **Branch:** `feat/demo-chat` (from `main` after PR #6)
 **Week:** 4 (build guide Phase 6; minimum scope 3–6, user-facing)
 
@@ -158,4 +158,22 @@ A visitor opens `/demo`, clicks a preloaded sample question or types their own, 
 
 ## Results
 
-Filled in after the work.
+- **Owner decision (6 Nov):** the landing page's "Try the demo" stays disabled until the deploy (T43), and `/demo` works by URL.
+- **Route (curl against the running dev server):**
+  - an empty question, a non-JSON body and a 2,001-character question each get a 400 with a readable message;
+  - "How do I create a partial index?" streamed `start`, then 8 × (`source-url` + `data-passage`), then the text deltas, then `data-citations` (`cited [1]`, `invalid []`), then `finish`.
+- **UI (headless Chrome over DevTools, 1280 px):**
+  - the first source card rendered at 4.25 s and the first answer text at 5.85 s, so **sources came 1.6 s before the answer**;
+  - clicking `[1]` set `aria-pressed`, highlighted card 1, moved focus to it, and the card links to `#partial-indexes`;
+  - the TOTP question showed the refusal card ("The docs I have don't cover this closely enough…") with the closest section;
+  - the announcement read "Answer ready, with 8 sources listed below it."
+- **Mobile, two fixes:**
+  - at 390 px there was 95 px of horizontal overflow. It came from an unbreakable token in a source snippet, found by querying elements with visible overflow, and is fixed with `overflow-wrap:anywhere` on snippets and answer text;
+  - the translucent input bar let the answer show through, so it's now opaque.
+  
+  Afterwards: 0 px overflow at 390 and 768.
+- **Cap:** a production server with `CITEDESK_DAILY_ANSWER_CAP=0` answered 429 with the cap message and made no model call.
+- **Logging:** `query_log` 9–21 are all linked to their calls. Answers have 0 invalid citations; refusals have only the embedding call.
+- **Surprise, prompt caching pays on repeats:** a repeated identical question read 3,194 of 3,197 input tokens from the cache, costing $0.00006 against $0.00043 for the first (cache-writing) call. One repeat still missed and wrote again. That's input for T38: the demo's sample questions are exactly the repeat traffic caching helps.
+- **Spend:** ≈ $0.0012.
+- **Checks:** 184 tests pass; typecheck, lint and build are clean (`/demo` static, `/api/chat` dynamic).

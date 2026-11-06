@@ -117,11 +117,11 @@ Until it is deployed it stays in the "In the lab" section of the portfolio. Neve
 
 **Phase 6: Product surface**
 
-- [ ] T28 📝 `api/chat` route (sources first, streamed, validated)
-- [ ] T29 Chat UI with visible citations
-- [ ] T30 Refusal UI
-- [ ] T31 Demo mode with sample questions
-- [ ] T32 Daily answer cap
+- [x] T28 📝 `api/chat` route (sources first, streamed, validated)
+- [x] T29 Chat UI with visible citations (`/demo`)
+- [x] T30 Refusal UI
+- [x] T31 Demo mode with sample questions (landing button stays disabled until T43, owner 6 Nov)
+- [x] T32 Daily answer cap
 
 **Phase 7: Generation evals**
 
@@ -333,3 +333,4 @@ Keep this current. Append one line per working session: date, what shipped, the 
 - **2026-11-06** — Phase 3 closed out: prompt 005's acceptance criteria ticked after re-verifying `npm run search` on `vectorSearch` live; the three migration files renamed to the versions the database records (the MCP assigns its own timestamps), with the rule added to `AGENTS.md` §12. No code change, $0.000001. Next: merge PR #4, T12 (owner's 10 searches), then T18.
 - **2026-11-06 (Phase 4, prompt 006)** — Retrieval eval tooling built: Zod schemas for questions and run files (`evals/schema.ts`), label normalisation and checks (`evals/labels.ts`; a merged sub-section's label is pointed at its parent's key, via a new `anchors` list on `groupSections`), recall@5/@8/@20, MRR and nDCG@10 with each section credited once (`evals/metrics.ts`, hand-computed tests), the `eval:retrieval` runner (spend cap, run file + `eval_runs` row), `eval:check` and `eval:keys`. Owner decided to write all 40 questions by hand (no AI drafts). Plumbing run on the 3 worked examples: estimate = actual = $0.00000122, `eval_runs` 1 (file not kept: not a baseline); the no-keyword paraphrase r02 missed at 20. 135 tests. Next: T20 (owner writes and labels 40, `eval:check` clean), then T22.
 - **2026-11-06 (Phase 5, prompt 007)** — T23–T25 and T27 built; T24/T25 re-measures and T26 wait on T20 (3 of 40 questions). T23: weighted `fts` (headings A, body B) + GIN + `keyword_documents`, lexemes ORed because `websearch_to_tsquery` matched 0 of 835 chunks for sentence questions. T24: RRF (k 60) in TypeScript with per-arm ranks; the gate stays on the vector arm and runs before any rerank. T25: listwise luna rerank of 50 → 8, ids validated, fused-order fallback, seeded shuffle in evals; `recordCall` logs `invalid_output` with tokens. Live: hybrid + rerank answer $0.0018 and 8.0 s (rerank $0.00148, 3.4 s, 11,160 tokens cache-written); a paraphrase with both labelled sections at ranks 1–2 was refused at 0.447 < 0.60. Plumbing runs (3 questions, not results) for vector/hybrid/hybrid-rerank: rerank $0.0015/query, p95 4.4 s; files not kept, `eval_runs` 2–4. T27: `eval:report [--check]` renders the README table and `evals/evidence.json`, only from full-set runs; the landing Evidence reads it. 169 tests. Phase spend ≈ $0.0064. Next: T20 (owner), then T22 and the three ablation runs (≈ $0.08), then T26.
+- **2026-11-06 (Phase 6, prompt 008)** — T28–T32 built. `answerQuestion` split into `prepareAnswer`/`finishAnswer` so the streamed route and the evals share one path; `streamAnswer` writes `source-url` + `data-passage` parts before the first token, `data-citations` (or `data-refusal`) last. `POST /api/chat`: Zod `{ question }` (single-turn), daily cap from `model_calls` (429), logging in `finally`. `/demo`: sample chips, a dependency-free Markdown subset renderer with `[n]` buttons that highlight and focus the source card, sources visible by default, a designed refusal card, Stop/retry, `aria-busy` and one announcement per answer. Live: curl showed all 8 sources before the first delta; in headless Chrome sources appeared 1.6 s before the answer text, `[1]` highlighted and focused card 1, TOTP showed the refusal card, 0 px overflow at 390/768 after two fixes (opaque input bar; `overflow-wrap:anywhere` for long identifiers in snippets). Cap 0 → 429 with no model call. Repeat sample questions hit the prompt cache: $0.00006 vs $0.00043. 184 tests. Phase spend ≈ $0.0012. Landing "Try the demo" stays disabled until the deploy (owner). Next: T20 (owner), then T22 + ablation runs and T26.
