@@ -23,21 +23,31 @@ const reducedMotion = () => typeof window !== "undefined" && window.matchMedia("
 
 function AssistantTurn({ message, streaming }: { message: CiteMessage; streaming: boolean }) {
   const [active, setActive] = useState<number | null>(null);
+  // The sentence whose marker was clicked: the active card marks the passage's closest wording to it.
+  const [claim, setClaim] = useState<string | null>(null);
   const cards = useRef(new Map<number, HTMLLIElement>());
 
-  const passages = new Map<number, string>();
+  // The card grows when it expands to the full passage, so scroll and focus after it has rendered.
+  useEffect(() => {
+    if (active === null) return;
+    const card = cards.current.get(active);
+    card?.scrollIntoView({ block: "nearest", behavior: reducedMotion() ? "auto" : "smooth" });
+    card?.focus({ preventScroll: true });
+  }, [active, claim]);
+
+  const passages = new Map<number, { snippet: string; content: string }>();
   const sources: SourceItem[] = [];
   let citations: Set<number> | null = null;
   let refusal = null;
   for (const p of message.parts) {
-    if (p.type === "data-passage") passages.set(p.data.n, p.data.snippet);
+    if (p.type === "data-passage") passages.set(p.data.n, { snippet: p.data.snippet, content: p.data.content });
     if (p.type === "data-citations") citations = new Set(p.data.cited);
     if (p.type === "data-refusal") refusal = p.data;
   }
   for (const p of message.parts) {
     if (p.type === "source-url") {
       const n = Number(p.sourceId);
-      sources.push({ n, title: p.title ?? p.url, url: p.url, snippet: passages.get(n) ?? "" });
+      sources.push({ n, title: p.title ?? p.url, url: p.url, snippet: passages.get(n)?.snippet ?? "", content: passages.get(n)?.content ?? "" });
     }
   }
 
@@ -45,11 +55,9 @@ function AssistantTurn({ message, streaming }: { message: CiteMessage; streaming
 
   const titles = new Map(sources.map((s) => [s.n, s.title]));
   const text = textOf(message);
-  const cite = (n: number) => {
+  const cite = (n: number, sentence: string) => {
     setActive(n);
-    const card = cards.current.get(n);
-    card?.scrollIntoView({ block: "nearest", behavior: reducedMotion() ? "auto" : "smooth" });
-    card?.focus({ preventScroll: true });
+    setClaim(sentence);
   };
 
   return (
@@ -65,6 +73,7 @@ function AssistantTurn({ message, streaming }: { message: CiteMessage; streaming
           sources={sources}
           cited={citations}
           active={active}
+          claim={claim}
           cardRef={(n) => (el) => {
             if (el) cards.current.set(n, el);
             else cards.current.delete(n);

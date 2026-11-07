@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseAnswer, parseInline } from "@/app/demo/answer-markdown";
+import { claimBefore, parseAnswer, parseInline } from "@/app/demo/answer-markdown";
 
 describe("parseInline", () => {
   it("turns markers, grouped markers included, into citations", () => {
@@ -66,5 +66,29 @@ describe("parseAnswer", () => {
 
   it("returns nothing for an empty answer", () => {
     expect(parseAnswer("")).toEqual([]);
+  });
+});
+
+describe("claimBefore", () => {
+  const at = (text: string, n: number) => {
+    const inlines = parseInline(text);
+    const i = inlines.findIndex((p) => p.type === "cite" && p.n === n);
+    return claimBefore(inlines, i);
+  };
+
+  it("returns the sentence the marker closes, not the earlier ones", () => {
+    const text = "Use a `WHERE` clause [1]. It makes the index smaller [2].";
+    expect(at(text, 1)).toBe("Use a WHERE clause");
+    expect(at(text, 2)).toBe(". It makes the index smaller");
+  });
+
+  it("gives grouped markers the same sentence, and handles a marker after the full stop", () => {
+    expect(at("Both pages say so [1][3].", 3)).toBe("Both pages say so");
+    expect(at("Partial indexes cover some rows. [1] They use a where clause [2].", 1)).toBe("Partial indexes cover some rows.");
+  });
+
+  it("includes inline code and bold, and is empty when nothing precedes the marker", () => {
+    expect(at("Run `create index` **first** [1]", 1)).toBe("Run create index first");
+    expect(at("[1] starts the answer", 1)).toBe("");
   });
 });

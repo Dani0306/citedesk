@@ -1,22 +1,75 @@
-import type { Ref } from "react";
+import type { ReactNode, Ref } from "react";
+import { codeBody, highlightPassage } from "@/lib/answer/highlight";
 
-export type SourceItem = { n: number; title: string; url: string; snippet: string };
+export type SourceItem = { n: number; title: string; url: string; snippet: string; content: string };
 
 // The evidence, visible by default and never behind a modal: every retrieved source, numbered as
-// the answer cites it. Cited ones are marked once the answer is checked; the active one (picked by
-// clicking its marker) is highlighted. Each links to the exact section on supabase.com.
+// the answer cites it. Cited ones are marked once the answer is checked. Clicking a [n] marker makes
+// its card active: it expands to the full passage and marks the wording closest to the sentence that
+// cited it (lib/answer/highlight.ts). That is a pointer by shared words, not a proof of support.
+// Each card links to the exact section on supabase.com.
+
+/** Prose with `inline code` and [links](url) shown the way a reader would see them. */
+function Inline({ text }: { text: string }): ReactNode {
+  const plain = text.replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1");
+  return plain.split(/(`[^`]*`)/g).map((part, i) =>
+    part.length > 1 && part.startsWith("`") && part.endsWith("`") ? (
+      <code key={i} className="rounded bg-surface px-1 py-0.5 font-mono text-[0.85em]">
+        {part.slice(1, -1)}
+      </code>
+    ) : (
+      <span key={i}>{part}</span>
+    ),
+  );
+}
+
+function Passage({ content, claim }: { content: string; claim: string }) {
+  const { segments, matched } = highlightPassage(content, claim);
+  return (
+    <div className="mt-3">
+      <p className="text-xs font-medium text-accent">
+        {matched ? "Closest wording to the sentence you clicked" : "No single sentence matches closely; the whole passage is the source."}
+      </p>
+      <div className="mt-2 text-[0.9375rem] leading-relaxed [overflow-wrap:anywhere]">
+        {segments.map((seg, i) =>
+          seg.kind === "code" ? (
+            <pre
+              key={i}
+              className={`my-2 overflow-x-auto rounded-xl border p-3 font-mono text-[0.8125rem] leading-relaxed ${seg.marked ? "border-accent bg-accent-soft" : "border-line bg-surface"}`}
+            >
+              {seg.marked ? <span className="sr-only">Closest wording: </span> : null}
+              <code>{codeBody(seg.text)}</code>
+            </pre>
+          ) : seg.marked ? (
+            <mark key={i} className="rounded-[4px] bg-accent-soft whitespace-pre-wrap text-ink underline decoration-accent decoration-2 underline-offset-4 [box-decoration-break:clone]">
+              <span className="sr-only">Closest wording: </span>
+              <Inline text={seg.text} />
+            </mark>
+          ) : (
+            <span key={i} className="whitespace-pre-wrap text-ink-2">
+              <Inline text={seg.text} />
+            </span>
+          ),
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function SourceList({
   idPrefix,
   sources,
   cited,
   active,
+  claim,
   cardRef,
 }: {
   idPrefix: string;
   sources: SourceItem[];
   cited: Set<number> | null;
   active: number | null;
+  /** The sentence whose marker was clicked, for the active card's highlight. */
+  claim: string | null;
   cardRef: (n: number) => Ref<HTMLLIElement>;
 }) {
   return (
@@ -45,7 +98,11 @@ export function SourceList({
                 </p>
                 {isCited ? <span className="shrink-0 rounded-full bg-accent-soft px-2 py-0.5 text-xs font-medium text-accent">Cited</span> : null}
               </div>
-              <p className={`mt-2.5 text-[0.9375rem] leading-relaxed text-pretty [overflow-wrap:anywhere] ${on ? "text-ink" : "text-ink-2"}`}>{s.snippet}</p>
+              {on && claim !== null && s.content ? (
+                <Passage content={s.content} claim={claim} />
+              ) : (
+                <p className="mt-2.5 text-[0.9375rem] leading-relaxed text-pretty text-ink-2 [overflow-wrap:anywhere]">{s.snippet}</p>
+              )}
               <a
                 href={s.url}
                 target="_blank"
