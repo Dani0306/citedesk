@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { formatUsd } from "@/lib/evidence";
-import { buildSummary, END, renderAblation, renderDiagnosis, replaceBlock, selectGeneration, START, withGeneration } from "@/evals/report";
-import type { RetrievalRun } from "@/evals/schema";
+import { buildSummary, END, renderAblation, renderCache, renderDiagnosis, replaceBlock, selectGeneration, START, withGeneration } from "@/evals/report";
+import type { CacheRun, RetrievalRun } from "@/evals/schema";
 
 const HASH = "a".repeat(64);
 const run = (name: string, createdAt: string, opts: Partial<RetrievalRun> = {}): RetrievalRun => ({
@@ -152,10 +152,38 @@ describe("generation and judge evidence", () => {
     expect(block).toContain("Hallucinated citations (a marker pointing at no retrieved source, checked in code): **0** (target 0)");
     expect(block).toContain("88% agreement with 120 hand-labelled sentences, Cohen's κ 0.71.");
     expect(block).toContain("| Retrieved the labelled section | 0 · OK | 0 · Generation problem |");
+    expect(block).toContain("| | supported | unsupported | no_claim |");
+    expect(block).toContain("| **supported** | 0 | 0 | 0 |");
+    expect(block).toContain("0 judge output(s) failed validation and were excluded.");
   });
 
   it("says what is missing while pending", () => {
     expect(renderDiagnosis({ gen: null, judge: null }, 3, 0)).toContain("needs a generation run on 40 answerable and 10 unanswerable questions (the set has 3 and 0)");
     expect(renderDiagnosis(selectGeneration([gen("g.json", 40, 10)], [], HASH), 40, 10)).toContain("**Groundedness pending:**");
+  });
+});
+
+describe("renderCache", () => {
+  const run = (name: string, createdAt: string, U: number, R: number, O: number, breakEvenRepeatShare: number | null, questions = 4) =>
+    ({
+      file: `${name}.json`,
+      run: { kind: "cache", createdAt, config: { name }, questions: Array.from({ length: questions }, (_, i) => `q${i}`), U, R, O, breakEvenRepeatShare } as unknown as CacheRun,
+    });
+
+  it("renders U, R, O and the break-even per config from the latest run, and says how small n is", () => {
+    const block = renderCache([
+      run("hybrid-rerank", "2026-11-06T10:00:00.000Z", 0.00173, 0.000746, 0.001426, 0.3131),
+      run("vector", "2026-11-06T09:00:00.000Z", 0.000999, 0.5, 0.5, 0.9),
+      run("vector", "2026-11-06T11:00:00.000Z", 0.000302, 0.00012, 0.000245, 0.3132),
+    ]);
+    expect(block).toContain("**n = 4 questions per pass, so this measures the mechanism; it is not a benchmark.**");
+    expect(block).toContain("| Naive vector | $0.00030 | $0.00012 | $0.00024 | 31% repeats | [vector.json](evals/runs/vector.json) |");
+    expect(block.indexOf("Naive vector")).toBeLessThan(block.indexOf("Hybrid + rerank"));
+    expect(block).not.toContain("$0.0010");
+  });
+
+  it("says never when repeats are not cheaper, and is pending without a run", () => {
+    expect(renderCache([run("vector", "2026-11-06T11:00:00.000Z", 1, 1, 1, null)])).toContain("| never |");
+    expect(renderCache([])).toContain("**Pending:** no `npm run eval:cache` run yet.");
   });
 });

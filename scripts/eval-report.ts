@@ -3,19 +3,37 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { loadQuestions } from "../evals/inputs";
-import { buildSummary, DIAGNOSIS_END, DIAGNOSIS_START, renderAblation, renderDiagnosis, renderSummaryJson, replaceBlock, selectGeneration, withGeneration } from "../evals/report";
-import { GenerationRun, JudgeRun, questionsHash, RetrievalRun } from "../evals/schema";
+import {
+  buildSummary,
+  CACHE_END,
+  CACHE_START,
+  DIAGNOSIS_END,
+  DIAGNOSIS_START,
+  renderAblation,
+  renderCache,
+  renderDiagnosis,
+  renderSummaryJson,
+  replaceBlock,
+  selectGeneration,
+  withGeneration,
+} from "../evals/report";
+import { CacheRun, GenerationRun, JudgeRun, questionsHash, RetrievalRun } from "../evals/schema";
 
 const root = process.cwd();
 const RUNS = path.join(root, "evals", "runs");
 const README = path.join(root, "README.md");
 const SUMMARY = path.join(root, "evals", "evidence.json");
 
-const SCHEMAS = { retrieval: RetrievalRun, generation: GenerationRun, judge: JudgeRun } as const;
+const SCHEMAS = { retrieval: RetrievalRun, generation: GenerationRun, judge: JudgeRun, cache: CacheRun } as const;
 
 /** Every run file, validated against the schema its `kind` names; threshold sweeps aren't reported here. */
 function loadRuns() {
-  const out = { retrieval: [] as { file: string; run: RetrievalRun }[], generation: [] as { file: string; run: GenerationRun }[], judge: [] as { file: string; run: JudgeRun }[] };
+  const out = {
+    retrieval: [] as { file: string; run: RetrievalRun }[],
+    generation: [] as { file: string; run: GenerationRun }[],
+    judge: [] as { file: string; run: JudgeRun }[],
+    cache: [] as { file: string; run: CacheRun }[],
+  };
   if (!existsSync(RUNS)) return out;
   for (const file of readdirSync(RUNS).filter((f) => f.endsWith(".json") && !f.startsWith("ci-")).sort()) {
     const json = JSON.parse(readFileSync(path.join(RUNS, file), "utf8"));
@@ -39,10 +57,10 @@ function main() {
 
   const readme = readFileSync(README, "utf8");
   const nextReadme = replaceBlock(
-    replaceBlock(readme, renderAblation(summary)),
-    renderDiagnosis(picked, answerable, set.questions.length - answerable),
-    DIAGNOSIS_START,
-    DIAGNOSIS_END,
+    replaceBlock(replaceBlock(readme, renderAblation(summary)), renderDiagnosis(picked, answerable, set.questions.length - answerable), DIAGNOSIS_START, DIAGNOSIS_END),
+    renderCache(runs.cache),
+    CACHE_START,
+    CACHE_END,
   );
   const nextSummary = renderSummaryJson(summary);
   const currentSummary = existsSync(SUMMARY) ? readFileSync(SUMMARY, "utf8") : "";
@@ -60,7 +78,7 @@ function main() {
   writeFileSync(README, nextReadme);
   writeFileSync(SUMMARY, nextSummary);
   console.log(
-    `Read ${runs.retrieval.length} retrieval, ${runs.generation.length} generation and ${runs.judge.length} judge run(s); ` +
+    `Read ${runs.retrieval.length} retrieval, ${runs.generation.length} generation, ${runs.judge.length} judge and ${runs.cache.length} cache run(s); ` +
       `reported ${summary.rows.length} ablation row(s), generation ${picked.gen ? "yes" : "pending"}, judge ${picked.judge ? "yes" : "pending"} ` +
       `(set ${summary.questionsHash.slice(0, 12)}, ${summary.questionCount} answerable).`,
   );

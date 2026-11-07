@@ -1,8 +1,10 @@
-import { z } from "zod";
 import { answerQuestion, type AnswerConfig, type AnswerDeps, type CacheMode } from "../lib/answer/answer";
 import type { CallSink, ModelCallRecord } from "../lib/calls/record";
 import { PRICING_READ_ON } from "../lib/cost/pricing";
 import { SpendCapError } from "./retrieval";
+import { CacheRun } from "./schema";
+
+export { CacheRun };
 
 // The caching measurement (T38). Our prompts share less than the 1,024-token minimum across
 // different questions, so only exact repeats can hit the cache. Implicit mode pays 1.25× to write
@@ -23,47 +25,6 @@ export const PASSES = [
   { pass: "implicit-repeat", cacheMode: "implicit" },
   { pass: "off", cacheMode: "off" },
 ] as const satisfies readonly { pass: string; cacheMode: CacheMode }[];
-
-const Call = z.object({
-  purpose: z.string(),
-  inputTokens: z.number().int().nonnegative(),
-  cachedInputTokens: z.number().int().nonnegative(),
-  cacheWriteTokens: z.number().int().nonnegative(),
-  outputTokens: z.number().int().nonnegative(),
-  costUsd: z.number().nonnegative(),
-  latencyMs: z.number().int().nonnegative(),
-});
-
-export const CacheRun = z.object({
-  kind: z.literal("cache"),
-  createdAt: z.iso.datetime(),
-  gitSha: z.string().min(1),
-  note: z.string().nullable(),
-  config: z.object({ name: z.string().min(1) }).catchall(z.unknown()),
-  pricesReadOn: z.iso.date(),
-  questions: z.array(z.string()),
-  costUsd: z.number().nonnegative(),
-  passes: z.array(
-    z.object({
-      pass: z.enum(["implicit-first", "implicit-repeat", "off"]),
-      perQuestion: z.array(z.object({ question: z.string(), refused: z.boolean(), costUsd: z.number().nonnegative(), latencyMs: z.number().int().nonnegative(), calls: z.array(Call) })),
-      costPerQuestionUsd: z.number().nonnegative(),
-      /** Cached input ÷ input over the answer and rerank calls. */
-      cacheReadShare: z.number().min(0).max(1),
-      cacheWriteShare: z.number().min(0).max(1),
-      p50LatencyMs: z.number().int().nonnegative(),
-    }),
-  ),
-  /** U, R and O: measured cost per question for a first ask, an exact repeat, and caching off. */
-  U: z.number().nonnegative(),
-  R: z.number().nonnegative(),
-  O: z.number().nonnegative(),
-  /** The repeat share above which implicit caching is cheaper; null when repeats aren't cheaper than first asks. */
-  breakEvenRepeatShare: z.number().nullable(),
-  /** Set when the first pass already read from the cache (an earlier run within the TTL), which would understate U. */
-  warning: z.string().nullable(),
-});
-export type CacheRun = z.infer<typeof CacheRun>;
 
 export function breakEven(U: number, R: number, O: number): number | null {
   if (U <= R) return null;
