@@ -53,20 +53,31 @@ Daniel Colorado — full stack developer in Medellín (UTC−5). Software Engine
 
 **Stretch (only after deploy, except rerank, the playground and click-to-highlight, which the build guide in `AGENTS.md` schedules earlier):** rerank top-50 → top-8 (LLM rerank) · metadata filters (product/version/language) · query rewriting / multi-query · contextual retrieval · Spanish questions against English docs · click-a-citation-to-highlight · retrieval playground (chunks, scores before and after rerank, which were cited).
 
-The demo and the video need click-to-highlight and the "I don't know" path. Click-to-highlight is the first stretch item to pull in right after deploy; the playground is week 5 per the schedule below.
+The demo needs click-to-highlight and the "I don't know" path. Click-to-highlight is the first stretch item to pull in right after deploy; the playground is week 5 per the schedule below.
 
 ## Definition of done
 
-Not done until all six exist:
+Not done until all five exist (the 90-second demo video was dropped by the owner on 6 Nov 2026; the live demo and the README carry the story):
 
 1. Deployed URL with a demo mode (sample questions preloaded, no login)
 2. Public GitHub repo
 3. README with architecture diagram and the ablation table
 4. Case study published on danielcolorado.dev
-5. 90-second demo video: a clicked citation highlighting its source, plus an honest "I don't know"
-6. Eval suite green in CI with a committed baseline
+5. Eval suite green in CI with a committed baseline
 
 Until it is deployed it stays in the "In the lab" section of the portfolio. Never describe it as finished before that.
+
+**Status, 6 Nov 2026 (T48):**
+
+| # | Criterion | State | Evidence / what is missing |
+| - | --------- | ----- | -------------------------- |
+| 1 | Deployed URL with a demo mode | **Met** (unlisted) | `https://citedesk-olive.vercel.app`: 7/7 live smoke checks, production traces and `query_log` rows confirmed. Caveat: the provisional 0.60 refusal threshold over-refuses paraphrases until T33 |
+| 2 | Public GitHub repo | **Met** | Public since before this phase; MIT `LICENSE` added in the Phase 9 PR |
+| 3 | README with architecture diagram and the ablation table | **Partly** | Diagram verified (Mermaid parses and renders). The ablation table renders "Pending": the set has 3 of 40 questions (T20) |
+| 4 | Case study published on danielcolorado.dev | **Not done** | Draft in `docs/case-study.md`, numbers Pending; publishing is the owner's step |
+| 5 | Eval suite green in CI with a committed baseline | **Partly** | CI green; the gate prints "no baseline yet" because `evals/baseline.json` needs T22 on the full set |
+
+**Blocked on the owner's hand work, in order:** T20 (37 more questions) → T33 (10 unanswerable) → threshold sweep → T22 + ablation runs → T26 → baseline commit → T35 (rubric edits, 30 labels) → judge calibration → publish the case study and remove `noindex` (T46).
 
 ## Workflow
 
@@ -141,12 +152,13 @@ Until it is deployed it stays in the "In the lab" section of the portfolio. Neve
 
 **Phase 9: Deploy and ship**
 
-- [ ] T43 Vercel deploy + demo-mode smoke test
-- [ ] T44 Click-a-citation-to-highlight
-- [ ] T45 README: architecture diagram, ablation, diagnosis, judge calibration
-- [ ] T46 Case study on danielcolorado.dev
-- [ ] T47 90-second demo video
-- [ ] T48 Check all six done-criteria
+- [x] T43 Vercel deploy + demo-mode smoke test (live 6 Nov, unlisted: `noindex`; smoke 7/7)
+- [x] T44 Click-a-citation-to-highlight (closest wording by shared words; a weak match marks nothing)
+- [x] T45 README: architecture diagram, ablation, diagnosis, judge calibration (diagrams verified; the evidence blocks render Pending until T20/T33/T35)
+- [ ] T46 Case study on danielcolorado.dev (draft in `docs/case-study.md`; publishing and leaving "In the lab" are the owner's steps)
+- [ ] T48 Check all five done-criteria (status below: 2 of 5 met)
+
+T47 (the 90-second demo video) was dropped by the owner on 6 Nov 2026, so the numbering skips it.
 
 After deploy (stretch): metadata filters · query rewriting / multi-query · Spanish questions against English docs · then the parked ideas.
 
@@ -250,16 +262,16 @@ Gathered 2 Nov 2026 with Firecrawl (4 searches, 4 pages read). The scraped pages
 
 Read from vendor pages on 2 Nov 2026; the OpenAI rows were re-read on 5 Nov (unchanged) when `lib/cost/pricing.ts` was written. The dated table in `lib/cost` is the source of truth once it exists; update this section from it.
 
-| Item                                                | Price                                                                                                     |
-| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `gpt-6-luna` (answers), per 1M, ≤272K input         | input $0.10 · cached input $0.01 · output $0.50                                                           |
-| `gpt-6.1-sol` (escalation, judge candidate), per 1M | input $2.00 · cached input $0.10 · output $10.00                                                          |
-| `gpt-6.1-terra` (judge candidate), per 1M           | input $1.00 · cached input $0.05 · output $5.00                                                           |
-| Batch                                               | about half the standard rate (luna $0.05 / $0.25)                                                         |
-| Prompts over 272K input tokens                      | higher long-context rates; irrelevant here (answers use ~6k)                                              |
-| `text-embedding-3-small`, per 1M tokens             | $0.02 (standard)                                                                                          |
-| Cache writes, per 1M (read 5 Nov)                    | luna $0.125 (30m) / $0.25 (12h) · sol $2.50 / $5.00 · terra $1.25 / $2.50. 1.25× and 2.5× input; this project uses the 30m default |
-| Langfuse Cloud free (Hobby) tier (read 6 Nov)        | 50k units/month · 30 days of data access · 2 users; a demo answer is 2–3 observations |
+| Item                                                | Price                                                                                                                              |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `gpt-6-luna` (answers), per 1M, ≤272K input         | input $0.10 · cached input $0.01 · output $0.50                                                                                    |
+| `gpt-6.1-sol` (escalation, judge candidate), per 1M | input $2.00 · cached input $0.10 · output $10.00                                                                                   |
+| `gpt-6.1-terra` (judge candidate), per 1M           | input $1.00 · cached input $0.05 · output $5.00                                                                                    |
+| Batch                                               | about half the standard rate (luna $0.05 / $0.25)                                                                                  |
+| Prompts over 272K input tokens                      | higher long-context rates; irrelevant here (answers use ~6k)                                                                       |
+| `text-embedding-3-small`, per 1M tokens             | $0.02 (standard)                                                                                                                   |
+| Cache writes, per 1M (read 5 Nov)                   | luna $0.125 (30m) / $0.25 (12h) · sol $2.50 / $5.00 · terra $1.25 / $2.50. 1.25× and 2.5× input; this project uses the 30m default |
+| Langfuse Cloud free (Hobby) tier (read 6 Nov)       | 50k units/month · 30 days of data access · 2 users; a demo answer is 2–3 observations                                              |
 
 Back-of-envelope, from the prices above (estimates; replace with measured values): embedding 1,000 chunks of ~650 tokens ≈ 650k tokens ≈ $0.013. One answer on luna with ~6k input and ~400 output tokens ≈ $0.0008. An LLM rerank of 50 chunks sends ~32k input tokens ≈ $0.003 per query, about 4× the answer itself, so reranking is a real cost line in the ablation table. A judged answer on sol (~3k in, ~300 out) ≈ $0.009. A full eval run (40 reranked queries + 50 answers + 50 judgements) ≈ $0.6. Caching saves only on the stable prefix (the system prompt), because retrieved chunks change per query, so expect a modest drop unless the prefix is long; the week-5 measurement decides what the README says.
 
@@ -307,6 +319,7 @@ Keep this current. Append one line per working session: date, what shipped, the 
   - audience, trust rules, FAQ and the call to action.
 
   Design tokens use one accent colour and support light, dark, high-contrast and reduced-transparency modes. Text uses the system font, with Geist Mono for evidence. No new dependencies. Typecheck, lint, 8 tests and build pass; $0. A visual pass in a browser is still owed (none in this session). Next: owner click-through at 360/768/1280, merge, then T01.
+
 - **2026-11-05 (icon)** — Replaced the default Next.js favicon with the CiteDesk mark (the nav logo as a solid blue tile): `app/icon.svg` for tabs and `app/apple-icon.png` (180x180, rendered once with the `sharp` that ships with Next, no new dependency). `favicon.ico` removed. Trivial change, so no prompt file. Next: owner click-through of the landing page, then T01.
 - **2026-11-05** — Landing page second pass (prompt 002): CSS scroll-driven reveals behind `@supports` and `prefers-reduced-motion` guards (content visible by default), a sticky three-step citation story with click override and three sample-question chips, a refusal gauge, a pipeline line, a chunk diagram, an inline-SVG icon set, back-to-top and a generated Open Graph image. No new dependency; $0 model spend. Checked in headless Chrome (stepping, click override, reduced motion, no-JS, 390/768/1280); Safari, Firefox, Lighthouse and the throttled Performance check are still manual. Layout shift over a full scroll 0.002. Next: T01, choose the corpus (verify its licence), then T02.
 - **2026-11-05 (T01–T06)** — Phase 0 decided (prompt 003). T01: Supabase docs `database` + `ai` at `aa9d04e` (Apache-2.0, ~400–700 chunks estimated) plus 10 unanswerable topics. T02: refusal gated on the top chunk's vector similarity. The first pass pointed CiteDesk at the shared lab project (`zatpmd…`, PaperTrail's), but the owner then chose the new, empty project `fscvgp…` it was already configured for, so the config was reverted and the rule changed to "CiteDesk has its own Supabase project". Phase 1 built:
@@ -316,6 +329,7 @@ Keep this current. Append one line per working session: date, what shipped, the 
   - **T06:** `lib/calls` with `recordCall`, JSONL and DB sinks, and cache writes recorded.
 
   `.env.example` recreated (it had never been committed). 40 tests; $0. Next: apply T03 and run `db:smoke`, then T07 (loader).
+
 - **2026-11-05 (later)** — Hero image generated with Higgsfield (GPT Image 2.6, transparent WebP, chosen over Nano Banana Pro, Seedream, FLUX and others by cost and fit): 3 drafts + 1 final = 5.75 credits (≈$0.40). Shipped as a 104 KB decorative image beside the headline on large screens only. Next: T01, choose the corpus (verify its licence), then T02.
 - **2026-11-05 (project)** — Owner decision: CiteDesk uses its **own Supabase project `fscvgp…`**, not the shared lab project that hosts PaperTrail (`zatpmd…`). `.env.local`, `.mcp.json` and `.env.example` point at `fscvgp…`; AGENTS.md and CLAUDE.md no longer say "shared lab project". The Supabase MCP in the running session still reports `zatpmd…` until Claude Code is restarted, so **T03 must not be applied until the MCP reports `fscvgp…`**. Next: restart, confirm with `get_project_url`, apply T03, expose `citedesk` in the API settings, run `db:smoke`.
 - **2026-11-05 (T03 applied)** — Confirmed the session MCP reports `fscvgp…` (CiteDesk's own project; PaperTrail is `zatpmd…`) and that the database was empty, then applied the migration. Verified in the database: 6 tables, RLS on with 0 policies, `service_role` has read/write, `anon` and `authenticated` have no table or schema access, `embedding` is `vector(1536)`, `vector` 0.8.2 in the `extensions` schema, 11 indexes. Security advisor: only the expected INFO "RLS enabled, no policy" ×6, which is the design. `db:smoke` before exposure prints `PGRST106: Invalid schema: citedesk` for all six tables, not `0 rows`. Next: owner exposes `citedesk` in Settings → API → Exposed schemas, `db:smoke` shows six `0 rows`, then T07 (loader).
@@ -329,6 +343,7 @@ Keep this current. Append one line per working session: date, what shipped, the 
   - **First search:** "partial index" → the right section at rank 1, 0.684.
 
   Deps added: `gpt-tokenizer` 4.1.0, `github-slugger` 2.0.0. 64 tests. Project spend $0.0042. Next: T12 (the owner's 10 searches), then T13.
+
 - **2026-11-05 (Phase 3, prompt 005)** — T13–T17 built and run live: `lib/retrieve/vector.ts` (`vectorSearch` over `match_documents`), `lib/answer` (static instructions then numbered sources then the question; `[n]` validator; refusal gate; `answerQuestion` with injected deps), `lib/db/query-log.ts` (buffered calls written with `query_id` after the row), additive migration (answer, refusal_reason, invalid_citations, uncited_sentences), `npm run ask`. **Provisional threshold 0.60** from 10 probes (in-scope 0.664–0.721, out-of-corpus 0.341–0.501). 6 live questions: 4 answered with **0 invalid markers** at $0.00023–$0.00043 and 2.8–3.9 s, 2 refused on `low_score` for the embedding alone (~$0.0000003). Findings: every answer call wrote ~the whole prompt to the cache at 1.25× (+~23% per answer, a T38 decision); the pg_cron page is a stub, so a pg_cron question passed the gate at 0.602 and got an answer from model memory with a valid-but-wrong citation. `reasoning: "low"` produced 0 reasoning tokens. 115 tests. Phase spend ≈ $0.0013; project ≈ $0.0055. Next: T12 (owner's 10 searches) if not done, then T18 (eval schemas and scorer).
 - **2026-11-06** — Phase 3 closed out: prompt 005's acceptance criteria ticked after re-verifying `npm run search` on `vectorSearch` live; the three migration files renamed to the versions the database records (the MCP assigns its own timestamps), with the rule added to `AGENTS.md` §12. No code change, $0.000001. Next: merge PR #4, T12 (owner's 10 searches), then T18.
 - **2026-11-06 (Phase 4, prompt 006)** — Retrieval eval tooling built: Zod schemas for questions and run files (`evals/schema.ts`), label normalisation and checks (`evals/labels.ts`; a merged sub-section's label is pointed at its parent's key, via a new `anchors` list on `groupSections`), recall@5/@8/@20, MRR and nDCG@10 with each section credited once (`evals/metrics.ts`, hand-computed tests), the `eval:retrieval` runner (spend cap, run file + `eval_runs` row), `eval:check` and `eval:keys`. Owner decided to write all 40 questions by hand (no AI drafts). Plumbing run on the 3 worked examples: estimate = actual = $0.00000122, `eval_runs` 1 (file not kept: not a baseline); the no-keyword paraphrase r02 missed at 20. 135 tests. Next: T20 (owner writes and labels 40, `eval:check` clean), then T22.
@@ -336,3 +351,4 @@ Keep this current. Append one line per working session: date, what shipped, the 
 - **2026-11-06 (Phase 6, prompt 008)** — T28–T32 built. `answerQuestion` split into `prepareAnswer`/`finishAnswer` so the streamed route and the evals share one path; `streamAnswer` writes `source-url` + `data-passage` parts before the first token, `data-citations` (or `data-refusal`) last. `POST /api/chat`: Zod `{ question }` (single-turn), daily cap from `model_calls` (429), logging in `finally`. `/demo`: sample chips, a dependency-free Markdown subset renderer with `[n]` buttons that highlight and focus the source card, sources visible by default, a designed refusal card, Stop/retry, `aria-busy` and one announcement per answer. Live: curl showed all 8 sources before the first delta; in headless Chrome sources appeared 1.6 s before the answer text, `[1]` highlighted and focused card 1, TOTP showed the refusal card, 0 px overflow at 390/768 after two fixes (opaque input bar; `overflow-wrap:anywhere` for long identifiers in snippets). Cap 0 → 429 with no model call. Repeat sample questions hit the prompt cache: $0.00006 vs $0.00043. 184 tests. Phase spend ≈ $0.0012. Landing "Try the demo" stays disabled until the deploy (owner). Next: T20 (owner), then T22 + ablation runs and T26.
 - **2026-11-06 (Phase 7, prompt 009)** — Generation-eval tooling built; every number waits on the owner (T20: 40 questions; T33: 10 unanswerable; T35: rubric edits + 30 labels). One sentence splitter shared by the uncited count, labels and judge. `eval:threshold` (balanced accuracy, ties broken low), `eval:generation` (per-question outcome, hallucinated citations in code, label-based citation precision, correct/false-refusal rates), `evals/rubric.md` drafted (supported / unsupported / no_claim, judged only against the cited passages), `eval:label` (interactive, sentence-hash keyed, resumable; a piped-input bug fixed), `eval:judge` (rubric as instructions, evidence shuffled per sentence, output validated, agreement + Cohen's κ + confusion matrix, tested by hand including the always-supported judge at 90% agreement and κ 0), diagnosis table (retrieval hit × grounded) in the README and the landing cards, shown only from full-set runs. Plumbing (5 questions, files deleted, `eval_runs` 5–6 kept with notes): sweep picked 0.48 and 0.60 would falsely refuse 2 of 3 paraphrases; generation 0 hallucinated citations, 2 false refusals, r02 answered from a missed retrieval; one sol judge call $0.0033. 210 tests. Phase spend ≈ $0.0035. Next: the owner's T20 + T33 questions, then threshold → generation → labels → judge.
 - **2026-11-06 (Phase 8, prompt 010)** — T38, T39, T41, T42 done; T40's gate and smoke built, the baseline waits on T22. **T38:** `cacheMode` (implicit | off; off = explicit mode with no breakpoint, measured 0 writes) and `eval:cache`. Measured U/R/O per question: hybrid + rerank $0.00173 / $0.00075 / $0.00143, vector $0.00030 / $0.00012 / $0.00025; **implicit pays above 31% exact repeats** in both. With rerank on, a repeat's answer call misses (rerank order is non-deterministic, so the prompt changes); 1 in 4 repeats missed anyway. Decision: the demo keeps implicit (sample chips repeat); `query_log` measures the real repeat share after deploy. **T39:** Langfuse via `registerTelemetry`, 5 pinned deps (`@ai-sdk/otel` 1.0.161 to match `ai` 7.0.161), a parent `citedesk.*` span per question, confirmed live (one trace: embedding + generation); free tier 50k units/month. **T40:** `eval:baseline`, `eval:gate` (2.0 points pass, 2.1 fail, hash mismatch fails, any hallucinated citation fails), `eval:smoke`. **T41:** `ci.yml` (lint, typecheck, tests, build, `eval:report --check`) + `eval-gate.yml` (smoke on push, full suite on PRs to main, $1 cap, SHA-pinned, JSONL-only logging); `OPENAI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY` set as repo secrets (owner-approved). **T42:** `/playground` + `/api/playground`: every candidate's vector/keyword/fused/rerank rank, sent-as and cited, behind the answer cap plus `CITEDESK_DAILY_RERANK_CAP` (50); headless-Chrome check passed (citation click highlights and focuses its row, 0 px overflow at 390). 227 tests. Phase spend ≈ $0.022. Next: T20 (owner) → T22 + ablation → baseline in its own commit; then T43 deploy.
+- **2026-11-06 (Phase 9, prompt 011)** — T43–T46 built; **deployed**: `https://citedesk-olive.vercel.app` (Vercel Hobby, project `citedesk`, 8 production-only env vars, GitHub connected, `noindex` until T46), live smoke 7/7 (answer sources-first + citations-last, honest refusal, 400s, absolute `og:image`). The first deploy exposed two traps: the global Vercel CLI (41.4.1) is too old (use `npx vercel@65.12.1`), and **production traces were missing** because Next bundles `instrumentation.ts` and the route separately, so the route's `after()` flushed an empty second processor; the tracing state now lives on `globalThis` and production traces arrive (`environment: production`). **T44:** clicking `[n]` expands the card to the full passage and marks the closest wording to the sentence you clicked (pure shared-word matcher, weak matches mark nothing, headless-Chrome checked at 390/1280). **T45:** README rewritten, two Mermaid diagrams verified in Chrome, generated cost block from the T38 runs (n = 4, stated), confusion matrix added to the diagnosis block, dated vendor-claimed prior art. **T46:** `docs/case-study.md` draft, numbers Pending. **T47 dropped** (owner), done-criteria now five, MIT license added (owner). Landing: the demo button is live, stale "not ingested" footer fixed, logging notice on `/demo` and `/playground`. 253 tests. Phase spend ≈ $0.004. Total logged model spend $0.036 over 161 calls. Next: the owner's T20/T33/T35, then T22 + ablation + baseline, then publish (T46).

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Container } from "../_landing/ui";
+import { LOGGING_NOTICE } from "../_landing/ui";
 import { Chat } from "./chat";
 
 export const metadata: Metadata = {
@@ -34,7 +35,8 @@ export default function DemoPage() {
         <div className="mt-10">
           <Chat />
         </div>
-        <p className="py-8 text-xs text-ink-2">Source: Supabase docs (Apache-2.0), commit aa9d04e. Not affiliated with Supabase.</p>
+        <p className="pt-8 text-xs text-ink-2">{LOGGING_NOTICE}</p>
+        <p className="pt-2 pb-8 text-xs text-ink-2">Source: Supabase docs (Apache-2.0), commit aa9d04e. Not affiliated with Supabase.</p>
         </div>
       </Container>
     </main>

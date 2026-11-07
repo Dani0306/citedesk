@@ -50,6 +50,22 @@ export function parseInline(text: string): Inline[] {
   return out;
 }
 
+/**
+ * The sentence a marker closes: the text of the inline run before it, back to the previous marker
+ * (or the start). Answer sentences end in markers (rule 2 of the answer prompt), so that run is the
+ * sentence; grouped markers like [1][3] close the same one.
+ */
+export function claimBefore(inlines: Inline[], index: number): string {
+  let i = index - 1;
+  while (i >= 0 && inlines[i].type === "cite") i--; // [1][3]: step over the group's earlier markers
+  const parts: string[] = [];
+  for (; i >= 0 && inlines[i].type !== "cite"; i--) {
+    const part = inlines[i];
+    if (part.type !== "cite") parts.unshift(part.text);
+  }
+  return parts.join("").trim();
+}
+
 export function parseAnswer(source: string): Block[] {
   const blocks: Block[] = [];
   const lines = source.replace(/\r\n?/g, "\n").split("\n");

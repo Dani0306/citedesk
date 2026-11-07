@@ -28,7 +28,7 @@ export function Footer() {
               GitHub
             </a>
           </li>
-          <li>Source docs: not ingested yet</li>
+          <li>Source: Supabase Database and AI docs (Apache-2.0), commit aa9d04e. Not affiliated with Supabase.</li>
           <li>
             <Badge>In the lab</Badge>
           </li>

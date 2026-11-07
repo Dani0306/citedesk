@@ -1,17 +1,17 @@
 import type { ReactNode } from "react";
-import { parseAnswer, type Inline } from "./answer-markdown";
+import { claimBefore, parseAnswer, type Inline } from "./answer-markdown";
 
 // Renders a cited answer from parsed blocks: no HTML strings, ever. A marker that points at a
 // retrieved source is a button that jumps to its card; one that doesn't is shown as plain text,
 // marked as not a source, and never becomes a link.
 
-export function CiteButton({ n, title, active, onCite }: { n: number; title: string; active: boolean; onCite: (n: number) => void }) {
+export function CiteButton({ n, title, active, onCite }: { n: number; title: string; active: boolean; onCite: () => void }) {
   return (
     <button
       type="button"
       aria-pressed={active}
       aria-label={`Source ${n}: ${title}`}
-      onClick={() => onCite(n)}
+      onClick={onCite}
       className={`press ml-0.5 inline-flex h-6 min-w-6 items-center justify-center rounded-md px-1 align-[0.05em] font-mono text-xs font-medium ${
         active ? "bg-accent-strong text-white" : "bg-accent-soft text-accent hover:bg-accent/20"
       }`}
@@ -33,7 +33,8 @@ type Props = {
   text: string;
   titles: Map<number, string>;
   active: number | null;
-  onCite: (n: number) => void;
+  /** `claim` is the sentence the clicked marker closes (the playground ignores it). */
+  onCite: (n: number, claim: string) => void;
 };
 
 export function AnswerBody({ text, titles, active, onCite }: Props) {
@@ -43,7 +44,11 @@ export function AnswerBody({ text, titles, active, onCite }: Props) {
       if (part.type === "strong") return <strong key={i}>{part.text}</strong>;
       if (part.type === "cite") {
         const title = titles.get(part.n);
-        return title ? <CiteButton key={i} n={part.n} title={title} active={active === part.n} onCite={onCite} /> : <InvalidMarker key={i} n={part.n} />;
+        return title ? (
+          <CiteButton key={i} n={part.n} title={title} active={active === part.n} onCite={() => onCite(part.n, claimBefore(inlines, i))} />
+        ) : (
+          <InvalidMarker key={i} n={part.n} />
+        );
       }
       return <span key={i}>{part.text}</span>;
     });

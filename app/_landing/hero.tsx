@@ -1,7 +1,7 @@
 import Image from "next/image";
 import heroPages from "./hero-pages.webp";
 import { SAMPLES } from "./sample-data";
-import { Badge, ButtonLink, Container, DemoButton, Marker, stagger } from "./ui";
+import { Badge, ButtonLink, Container, DemoButton, LAB_STATUS, Marker, stagger } from "./ui";
 
 export function SampleLabel() {
   return <p className="text-xs font-medium text-ink-2">Sample · scripted, not a live answer</p>;
@@ -51,7 +51,7 @@ export function Hero() {
       <Container>
         <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
           <div className="max-w-3xl">
-            <Badge>In the lab · not deployed yet</Badge>
+            <Badge>{LAB_STATUS}</Badge>
             <h1 id="hero-title" className="text-display mt-6 text-balance">
               Answers you can check.
             </h1>
@@ -60,7 +60,7 @@ export function Hero() {
               and says “I don’t know” when the docs don’t cover it.
             </p>
             <div className="mt-9 flex flex-wrap items-start gap-3">
-              <DemoButton id="hero-demo" />
+              <DemoButton />
               <ButtonLink href="#evidence" variant="secondary">
                 See the evidence
               </ButtonLink>

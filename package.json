@@ -2,6 +2,9 @@
   "name": "citedesk",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -27,7 +30,8 @@
     "eval:cache": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/eval-cache.ts",
     "eval:baseline": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/eval-baseline.ts",
     "eval:gate": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/eval-gate.ts",
-    "eval:smoke": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/eval-smoke.ts"
+    "eval:smoke": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/eval-smoke.ts",
+    "smoke:live": "node --import tsx scripts/smoke-live.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "4.0.107",
