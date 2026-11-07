@@ -8,11 +8,11 @@ export function Cta() {
           Ask the docs something.
         </h2>
         <p style={stagger(1)} className="reveal text-lead mt-5 max-w-xl text-pretty text-ink-2">
-          The live demo opens after deploy. Until then, the code, the eval suite and its results are being built in the
+          Try it on the Supabase Database and AI docs, or follow the code and the eval suite as they are built in the
           open.
         </p>
-        <div style={stagger(2)} className="reveal mt-9 flex flex-wrap items-start justify-center gap-3 [&>span]:items-center">
-          <DemoButton id="cta-demo" />
+        <div style={stagger(2)} className="reveal mt-9 flex flex-wrap items-start justify-center gap-3">
+          <DemoButton />
           <ButtonLink href={GITHUB_URL} variant="secondary" external>
             Follow on GitHub
           </ButtonLink>

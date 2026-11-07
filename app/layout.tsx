@@ -12,6 +12,9 @@ const description =
 
 export const metadata: Metadata = {
   title: "CiteDesk — answers you can check",
+  // In the lab: reachable by URL, but not indexed or followed until the case study is published (T46,
+  // which removes this line). Child routes inherit it because none of them defines its own robots.
+  robots: { index: false, follow: false },
   description,
   openGraph: {
     title: "CiteDesk — answers you can check",

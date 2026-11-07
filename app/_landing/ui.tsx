@@ -1,7 +1,15 @@
+import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 
 export const GITHUB_URL = "https://github.com/Dani0306";
 export const PORTFOLIO_URL = "https://danielcolorado.dev";
+
+/** Accurate today: query_log stores the question text, Langfuse traces carry it, and the app sets no cookies. */
+export const LOGGING_NOTICE =
+  "Questions are stored to measure and debug this demo, and sent to a tracing service (Langfuse). No account, no tracking cookies. Please don't enter personal or company data.";
+
+/** One place for the project's status line, so the hero badge can't drift from reality. Becomes "Live" at T46. */
+export const LAB_STATUS = "In the lab · demo live";
 
 /** Position of an item in a staggered group; globals.css shifts the item's scroll range by it. */
 export function stagger(i: number): CSSProperties {
@@ -73,26 +81,11 @@ export function ButtonLink({
   );
 }
 
-/**
- * The demo route doesn't exist until deploy, so the button is disabled and says why
- * instead of linking to a dead page.
- */
-export function DemoButton({ id, size = "default" }: { id: string; size?: "default" | "small" }) {
-  const captionId = `${id}-caption`;
+export function DemoButton({ size = "default" }: { size?: "default" | "small" }) {
   return (
-    <span className="inline-flex flex-col items-start gap-1.5">
-      <button
-        type="button"
-        disabled
-        aria-describedby={captionId}
-        className={`${base} ${variants.primary} cursor-not-allowed opacity-45 ${size === "small" ? "min-h-9 px-4 text-sm" : ""}`}
-      >
-        Try the demo
-      </button>
-      <span id={captionId} className={`text-ink-2 ${size === "small" ? "sr-only" : "text-sm"}`}>
-        Opens after deploy
-      </span>
-    </span>
+    <Link href="/demo" className={`${base} ${variants.primary} ${size === "small" ? "min-h-9 px-4 text-sm" : ""}`}>
+      Try the demo
+    </Link>
   );
 }
 

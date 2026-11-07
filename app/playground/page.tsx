@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Container } from "../_landing/ui";
+import { Container, LOGGING_NOTICE } from "../_landing/ui";
 import { Playground } from "./playground";
 
 export const metadata: Metadata = {
@@ -32,7 +32,8 @@ export default function PlaygroundPage() {
         <div className="mt-10">
           <Playground />
         </div>
-        <p className="mt-10 text-xs text-ink-2">Source: Supabase docs (Apache-2.0), commit aa9d04e. Not affiliated with Supabase.</p>
+        <p className="mt-10 text-xs text-ink-2">{LOGGING_NOTICE}</p>
+        <p className="mt-2 text-xs text-ink-2">Source: Supabase docs (Apache-2.0), commit aa9d04e. Not affiliated with Supabase.</p>
       </Container>
     </main>
   );

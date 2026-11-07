@@ -42,7 +42,7 @@ export function Nav() {
           >
             GitHub
           </a>
-          <DemoButton id="nav-demo" size="small" />
+          <DemoButton size="small" />
         </nav>
       </Container>
       {/* Reading progress; only shown where scroll timelines are supported. */}
