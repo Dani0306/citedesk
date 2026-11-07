@@ -292,11 +292,11 @@ Work the tasks in order; a task needs the ones before it. Legend: 📝 write an 
 
 ### Phase 9: Deploy and ship
 - **T43** Vercel Hobby deploy: env vars (ask first), build check, and a demo-mode smoke test on the live URL.
-- **T44** Click-a-citation-to-highlight. Technically a stretch item, but the video needs it.
+- **T44** Click-a-citation-to-highlight. Technically a stretch item, but the demo needs it.
 - **T45** README: architecture diagram, ablation table, diagnosis table and the judge-calibration numbers. Competitor claims are linked, dated and marked vendor-claimed.
 - **T46** Case study on danielcolorado.dev, drawn from the project log. Move the project out of "In the lab" only now.
-- **T47** 90-second demo video: a clicked citation highlighting its source, plus an honest "I don't know".
-- **T48** Check all six done-criteria and confirm the eval gate is green in CI.
+- **T47** ~~90-second demo video~~ Dropped by the owner on 6 Nov 2026; the live demo and the README carry the story.
+- **T48** Check all five done-criteria and confirm the eval gate is green in CI.
 
 ---
 
