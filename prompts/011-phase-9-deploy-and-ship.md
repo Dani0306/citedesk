@@ -1,6 +1,6 @@
 # 011 — Phase 9: deploy and ship (T43–T48)
 
-**Status:** draft
+**Status:** done (T43–T46, T48 status); the numbers and the publication wait on the owner
 **Branch:** `feat/ship` (from `main` after PR #9)
 **Week:** 6 (build guide Phase 9)
 
@@ -199,4 +199,26 @@ Everything below renders those as "Pending" rather than inventing a number, and 
 
 ## Results
 
-Filled in after the work.
+- **Owner decisions (6 Nov):** build now; deploy now, unlisted (a second confirmation was asked and given before any Vercel action, with the commands shown); the demo video is **dropped**, so the done-criteria are five; add an **MIT** license; connect GitHub for auto-deploys.
+- **T44, the highlight (headless Chrome):**
+  - Clicking `[1]` on "How do I create a partial index?" expanded card 1 to the full passage and marked the sentence "In our example, perhaps we only want to match on `age` where `deceased is false`." plus the code block. Focus landed on the card, the other cards stayed collapsed, and there was 0 px overflow at 390 px.
+  - **Found by looking:** the code block showed literal fence lines, so I added `codeBody` to strip them for display.
+  - The matcher's tests use three real passages. A claim about Storage upload limits marks nothing, and a single shared word is not a match.
+- **T43, hardening:** `engines.node: 24.x`; `noindex` on every page; the demo button is a link; the hero badge comes from one constant; the stale footer ("Source docs: not ingested yet") and the CTA copy were fixed; the logging notice is on `/demo` and `/playground`. `smoke:live` passed 7/7 against local dev first.
+- **T43, the deploy:**
+  - The project was created, 8 production-only variables were set (secrets `--sensitive`; the list shows names and "Encrypted" only), and `deploy --prod` went live at `https://citedesk-olive.vercel.app` in 37 s (20 s on the redeploy).
+  - **Trap 1: the global Vercel CLI (41.4.1) is rejected by the API** (needs ≥ 47.2.2) and wrongly called `24.x` invalid. I ran the current CLI through `npx` instead of upgrading your global install.
+  - Live smoke passed 7/7: pages 200 and `noindex`; an absolute, reachable `og:image` on the production host; 400s on bad bodies; a streamed answer with sources first and citations last; an honest refusal. Production `query_log` rows were linked to their model calls and recorded the provisional threshold.
+  - **Trap 2: production traces never arrived.**
+    - The same production build traced fine locally under `next start`, which bisected it to serverless.
+    - Cause: Next bundles `instrumentation.ts` and the route separately, so the route's `after()` flushed an empty second processor.
+    - Fix: tracing state on `globalThis`.
+    - After the redeploy, Langfuse showed `environment: production` traces: an answer (embedding and generation under `citedesk.chat`) and a refusal (embedding only).
+- **T45:** the README was rewritten.
+  - The first diagram, a single 15-node `LR` chart, parsed but rendered as a wide strip with tiny text. I split it into two diagrams (offline index, and per question) and re-verified both in headless Chrome with Mermaid 11.12.
+  - The generated cost block comes from the T38 run files and states n = 4.
+  - The diagnosis block now renders the confusion matrix.
+- **T46:** the draft is in `docs/case-study.md`. Numbers are "Pending" except the logged spend ($0.036 over 161 calls, from the database).
+- **T48:** two of the five criteria are met (deployed URL; public repo). Two are partly met (README: the ablation renders Pending; CI: no baseline yet). One is not done (case study unpublished). The table is in `CLAUDE.md`.
+- **Spend:** ≈ $0.004 (the smoke runs, demo clicks, and the traces check).
+- **Checks:** 253 tests, typecheck, lint, build and `eval:report --check` pass; CI runs on the PR.

@@ -4,7 +4,7 @@ A documentation assistant that answers only from a given corpus and cites the ex
 
 > **Status: in the lab.** The demo runs on the Supabase Database and AI guides. The retrieval and generation numbers below show **Pending** until a 40-question labelled set exists; this README never reports a number that a run file doesn't contain.
 
-**Live demo:** _the URL is added here once the first deploy is smoke-tested._ · [Retrieval playground](#the-retrieval-playground) · [Case study draft](docs/case-study.md)
+**Live demo:** deployed and smoke-tested, but unlisted (`noindex`, not linked) until the case study is published; the link is added here then. · [Retrieval playground](#the-retrieval-playground) · [Case study draft](docs/case-study.md)
 
 ## What it does
 
