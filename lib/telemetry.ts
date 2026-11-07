@@ -17,25 +17,32 @@ export function tracingConfigured(env: Env = process.env): boolean {
 
 const TRACER = "citedesk";
 
-let processor: LangfuseSpanProcessor | null | undefined;
+// Next bundles instrumentation.ts and each route separately, so module-level state would exist once
+// per bundle: the route's flush() would then flush a second, empty processor while the one holding
+// the spans is never flushed, and a serverless function freezes before its timer fires (found on the
+// first Vercel deploy: traces never arrived). globalThis is shared by every bundle in the process.
+const STATE = Symbol.for("citedesk.tracing");
+type Tracing = { processor: LangfuseSpanProcessor | null };
+const shared = globalThis as typeof globalThis & { [STATE]?: Tracing };
 
 /** Starts tracing once per process (a no-op without keys) and returns a flush for short-lived runs. */
 export function startTracing(env: Env = process.env): { enabled: boolean; flush: () => Promise<void> } {
-  if (processor === undefined) {
+  if (!shared[STATE]) {
     if (!tracingConfigured(env)) {
-      processor = null;
+      shared[STATE] = { processor: null };
     } else {
-      processor = new LangfuseSpanProcessor({
+      const processor = new LangfuseSpanProcessor({
         environment: env.VERCEL_ENV ?? "local",
         // Langfuse's default filter keeps AI SDK spans; add ours, so each question is one trace.
         shouldExportSpan: ({ otelSpan }) => isDefaultExportSpan(otelSpan) || otelSpan.instrumentationScope.name === TRACER,
       });
       new NodeTracerProvider({ spanProcessors: [processor] }).register();
       registerTelemetry(new LangfuseVercelAiSdkIntegration());
+      shared[STATE] = { processor };
     }
   }
-  const active = processor;
-  return { enabled: active !== null, flush: async () => (active ? active.forceFlush() : undefined) };
+  const { processor } = shared[STATE];
+  return { enabled: processor !== null, flush: async () => (processor ? processor.forceFlush() : undefined) };
 }
 
 /**

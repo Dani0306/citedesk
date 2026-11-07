@@ -13,4 +13,11 @@ describe("tracing", () => {
     expect(t.enabled).toBe(false);
     await expect(t.flush()).resolves.toBeUndefined();
   });
+
+  it("keeps its state on globalThis, so every Next bundle shares one processor", () => {
+    startTracing({});
+    expect((globalThis as Record<symbol, unknown>)[Symbol.for("citedesk.tracing")]).toEqual({ processor: null });
+    // A second call, as from another bundle, reuses it instead of starting again.
+    expect(startTracing({ LANGFUSE_PUBLIC_KEY: "pk", LANGFUSE_SECRET_KEY: "sk", LANGFUSE_BASE_URL: "https://x" }).enabled).toBe(false);
+  });
 });
